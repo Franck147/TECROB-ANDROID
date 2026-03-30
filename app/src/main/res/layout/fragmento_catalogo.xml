@@ -5,9 +5,9 @@
     Estructura:
       LinearLayout (raíz vertical)
         - Título + campo de búsqueda
-        - ChipGroup de categorías (Todos, Mantenimiento, Software, Repuesto, Diagnóstico)
+        - Botón agregar nuevo servicio
+        - ChipGroup de categorías
         - SwipeRefreshLayout + RecyclerView
-        - Texto vacío si no hay resultados
 -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -25,14 +25,35 @@
         android:padding="16dp"
         android:paddingBottom="8dp">
 
-        <TextView
-            android:layout_width="wrap_content"
+        <!-- Título + botón agregar en la misma fila -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/titulo_catalogo"
-            android:textColor="@color/texto_principal"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="12dp"/>
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/titulo_catalogo"
+                android:textColor="@color/texto_principal"
+                android:textSize="24sp"
+                android:textStyle="bold"/>
+
+            <!-- Botón agregar nuevo servicio -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/boton_agregar_nuevo"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:text="+ Nuevo"
+                android:textSize="12sp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                style="@style/EstiloBotonPrimario"/>
+
+        </LinearLayout>
 
         <!-- Campo de búsqueda -->
         <com.google.android.material.textfield.TextInputLayout
@@ -112,6 +133,16 @@
         </com.google.android.material.chip.ChipGroup>
     </HorizontalScrollView>
 
+    <!-- Hint de toque largo -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Toque largo en un servicio para editar o eliminar"
+        android:textColor="@color/texto_muted"
+        android:textSize="11sp"
+        android:gravity="center"
+        android:paddingBottom="6dp"/>
+
     <!-- ── LISTA CON PULL-TO-REFRESH ─────────────────────────── -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipe_refresh"
@@ -122,7 +153,6 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
-            <!-- Lista de servicios -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recycler_servicios"
                 android:layout_width="match_parent"
@@ -131,7 +161,6 @@
                 android:paddingBottom="24dp"
                 android:clipToPadding="false"/>
 
-            <!-- Mensaje cuando no hay resultados -->
             <TextView
                 android:id="@+id/texto_sin_resultados"
                 android:layout_width="match_parent"

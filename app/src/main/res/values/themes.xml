@@ -47,24 +47,24 @@
         <item name="android:textColorHint">@color/texto_muted</item>
     </style>
 
-    <!-- Chip selección única -->
+    <!-- Chip selección única — cambia a rojo al seleccionar -->
     <style name="EstiloChip" parent="Widget.Material3.Chip.Filter">
-        <item name="chipBackgroundColor">@color/fondo_tarjeta</item>
-        <item name="chipStrokeColor">@color/fondo_borde</item>
-        <item name="chipStrokeWidth">0.5dp</item>
-        <item name="android:textColor">@color/texto_secundario</item>
+        <item name="chipBackgroundColor">@color/selector_chip_fondo</item>
+        <item name="chipStrokeColor">@color/selector_chip_borde</item>
+        <item name="chipStrokeWidth">1dp</item>
+        <item name="android:textColor">@color/selector_chip_texto</item>
         <item name="chipCornerRadius">20dp</item>
         <item name="checkedIconVisible">false</item>
         <item name="chipIconVisible">false</item>
         <item name="chipMinHeight">36dp</item>
     </style>
 
-    <!-- Chip accesorios selección múltiple -->
+    <!-- Chip accesorios — selección múltiple, cambia a rojo al seleccionar -->
     <style name="EstiloChipAccesorio" parent="Widget.Material3.Chip.Filter">
-        <item name="chipBackgroundColor">@color/fondo_tarjeta</item>
-        <item name="chipStrokeColor">@color/fondo_borde</item>
-        <item name="chipStrokeWidth">0.5dp</item>
-        <item name="android:textColor">@color/texto_secundario</item>
+        <item name="chipBackgroundColor">@color/selector_chip_fondo</item>
+        <item name="chipStrokeColor">@color/selector_chip_borde</item>
+        <item name="chipStrokeWidth">1dp</item>
+        <item name="android:textColor">@color/selector_chip_texto</item>
         <item name="chipCornerRadius">20dp</item>
         <item name="checkedIconVisible">false</item>
         <item name="chipIconVisible">false</item>

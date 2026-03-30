@@ -3,6 +3,7 @@ package com.example.tecrobsys.fragmentos.nueva_orden;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,34 +28,16 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-/**
- * FragmentoNuevaOrden — Formulario para crear una orden de servicio.
- *
- * Flujo:
- *   1. Buscar cliente existente o registrar uno nuevo
- *   2. Seleccionar tipo de equipo
- *   3. Ingresar marca, modelo, serie
- *   4. Describir el desperfecto
- *   5. Seleccionar prioridad
- *   6. Marcar accesorios incluidos
- *   7. Guardar → POST /orden + POST /equipo en Supabase
- *   8. Navegar a la lista de órdenes con mensaje de éxito
- */
 public class FragmentoNuevaOrden extends Fragment {
 
+    private static final String TAG = "TECROB_ORDEN";
+
     private FragmentoNuevaOrdenBinding enlace;
-
-    // Cliente seleccionado del autocompletado
     private Cliente clienteSeleccionado = null;
-
-    // Lista de clientes para el autocompletado
     private final List<Cliente> listaClientes = new ArrayList<>();
-
-    // Valores seleccionados en los chips
     private String tipoEquipo = "laptop";
     private String prioridad  = "normal";
     private final List<String> accesorios = new ArrayList<>();
-
     private int empresaId;
     private int tecnicoId;
 
@@ -83,44 +66,27 @@ public class FragmentoNuevaOrden extends Fragment {
         configurarBotones();
     }
 
-    /**
-     * Configura el campo de búsqueda de cliente con autocompletado.
-     * Busca en Supabase cuando el usuario escribe 2+ caracteres.
-     */
     private void configurarBuscadorCliente() {
-        // El ID en XML es "campo_cliente" → ViewBinding lo convierte en "campoCliente"
         enlace.campoCliente.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int i, int c, int a) {}
             @Override public void afterTextChanged(Editable e) {}
-
             @Override
             public void onTextChanged(CharSequence texto, int i, int a, int c) {
-                if (texto.length() >= 2) {
-                    buscarClientes(texto.toString());
-                }
-                if (texto.length() == 0) {
-                    clienteSeleccionado = null;
-                }
+                if (texto.length() >= 2) buscarClientes(texto.toString());
+                if (texto.length() == 0) clienteSeleccionado = null;
             }
         });
 
-        // Al seleccionar una sugerencia del dropdown
         enlace.campoCliente.setOnItemClickListener((parent, v, pos, id) -> {
             if (pos < listaClientes.size()) {
                 clienteSeleccionado = listaClientes.get(pos);
-                enlace.campoCliente.setText(
-                        clienteSeleccionado.getNombreCompleto());
+                enlace.campoCliente.setText(clienteSeleccionado.getNombreCompleto());
             }
         });
 
-        // Botón registrar nuevo cliente → abre el BottomSheet
-        enlace.botonNuevoCliente.setOnClickListener(v ->
-                mostrarDialogoNuevoCliente());
+        enlace.botonNuevoCliente.setOnClickListener(v -> mostrarDialogoNuevoCliente());
     }
 
-    /**
-     * Busca clientes en Supabase por nombre, apellido o teléfono.
-     */
     private void buscarClientes(String texto) {
         String filtroOr = "(nombre.ilike.*" + texto + "*,"
                 + "apellido.ilike.*" + texto + "*,"
@@ -132,34 +98,23 @@ public class FragmentoNuevaOrden extends Fragment {
                     @Override
                     public void onResponse(@NonNull Call<List<Cliente>> c,
                                            @NonNull Response<List<Cliente>> r) {
-                        if (enlace == null || !r.isSuccessful()
-                                || r.body() == null) return;
-
+                        if (enlace == null || !r.isSuccessful() || r.body() == null) return;
                         listaClientes.clear();
                         listaClientes.addAll(r.body());
-
                         List<String> sugerencias = new ArrayList<>();
-                        for (Cliente cliente : listaClientes) {
+                        for (Cliente cliente : listaClientes)
                             sugerencias.add(cliente.getTextoAutocompletado());
-                        }
-
-                        ArrayAdapter<String> adaptador = new ArrayAdapter<>(
+                        enlace.campoCliente.setAdapter(new ArrayAdapter<>(
                                 requireContext(),
                                 android.R.layout.simple_dropdown_item_1line,
-                                sugerencias);
-                        enlace.campoCliente.setAdapter(adaptador);
+                                sugerencias));
                         enlace.campoCliente.showDropDown();
                     }
-
                     @Override
-                    public void onFailure(@NonNull Call<List<Cliente>> c,
-                                          @NonNull Throwable e) { }
+                    public void onFailure(@NonNull Call<List<Cliente>> c, @NonNull Throwable e) {}
                 });
     }
 
-    /**
-     * Configura los chips de tipo de equipo — selección única.
-     */
     private void configurarChipsEquipo() {
         enlace.chipGroupEquipo.setOnCheckedStateChangeListener((grupo, ids) -> {
             if (ids.isEmpty()) return;
@@ -174,9 +129,6 @@ public class FragmentoNuevaOrden extends Fragment {
         enlace.chipLaptop.setChecked(true);
     }
 
-    /**
-     * Configura los chips de prioridad — selección única.
-     */
     private void configurarChipsPrioridad() {
         enlace.chipGroupPrioridad.setOnCheckedStateChangeListener((grupo, ids) -> {
             if (ids.isEmpty()) return;
@@ -189,22 +141,13 @@ public class FragmentoNuevaOrden extends Fragment {
         enlace.chipNormal.setChecked(true);
     }
 
-    /**
-     * Configura los chips de accesorios — selección múltiple.
-     */
     private void configurarChipsAccesorios() {
-        enlace.chipFunda.setOnCheckedChangeListener((c, m) ->
-                actualizarAccesorio("Funda", m));
-        enlace.chipMouse.setOnCheckedChangeListener((c, m) ->
-                actualizarAccesorio("Mouse", m));
-        enlace.chipCargador.setOnCheckedChangeListener((c, m) ->
-                actualizarAccesorio("Cargador", m));
-        enlace.chipMochila.setOnCheckedChangeListener((c, m) ->
-                actualizarAccesorio("Mochila", m));
-        enlace.chipCableDatos.setOnCheckedChangeListener((c, m) ->
-                actualizarAccesorio("Cable datos", m));
-        enlace.chipEstabilizador.setOnCheckedChangeListener((c, m) ->
-                actualizarAccesorio("Estabilizador", m));
+        enlace.chipFunda.setOnCheckedChangeListener((c, m) -> actualizarAccesorio("Funda", m));
+        enlace.chipMouse.setOnCheckedChangeListener((c, m) -> actualizarAccesorio("Mouse", m));
+        enlace.chipCargador.setOnCheckedChangeListener((c, m) -> actualizarAccesorio("Cargador", m));
+        enlace.chipMochila.setOnCheckedChangeListener((c, m) -> actualizarAccesorio("Mochila", m));
+        enlace.chipCableDatos.setOnCheckedChangeListener((c, m) -> actualizarAccesorio("Cable datos", m));
+        enlace.chipEstabilizador.setOnCheckedChangeListener((c, m) -> actualizarAccesorio("Estabilizador", m));
     }
 
     private void actualizarAccesorio(String nombre, boolean agregar) {
@@ -212,58 +155,42 @@ public class FragmentoNuevaOrden extends Fragment {
         else accesorios.remove(nombre);
     }
 
-    /**
-     * Configura los botones Guardar y Cancelar.
-     */
     private void configurarBotones() {
         enlace.botonGuardar.setOnClickListener(v -> {
             if (validarFormulario()) guardarOrden();
         });
         enlace.botonCancelar.setOnClickListener(v -> {
-            if (requireActivity() instanceof ActividadPrincipal) {
+            if (requireActivity() instanceof ActividadPrincipal)
                 ((ActividadPrincipal) requireActivity()).navegarA("ordenes");
-            }
         });
     }
 
-    /**
-     * Valida los campos obligatorios.
-     * @return true si el formulario es válido
-     */
     private boolean validarFormulario() {
         boolean valido = true;
-
         if (clienteSeleccionado == null) {
-            enlace.layoutCliente.setError(
-                    getString(R.string.error_selecciona_cliente));
+            enlace.layoutCliente.setError(getString(R.string.error_selecciona_cliente));
             valido = false;
         } else {
             enlace.layoutCliente.setError(null);
         }
-
         if (enlace.campoMarca.getText().toString().trim().isEmpty()) {
-            enlace.layoutMarca.setError(
-                    getString(R.string.error_ingresa_marca));
+            enlace.layoutMarca.setError(getString(R.string.error_ingresa_marca));
             valido = false;
         } else {
             enlace.layoutMarca.setError(null);
         }
-
         if (enlace.campoDesperfecto.getText().toString().trim().isEmpty()) {
-            enlace.layoutDesperfecto.setError(
-                    getString(R.string.error_ingresa_desperfecto));
+            enlace.layoutDesperfecto.setError(getString(R.string.error_ingresa_desperfecto));
             valido = false;
         } else {
             enlace.layoutDesperfecto.setError(null);
         }
-
         return valido;
     }
 
     /**
      * Guarda la orden en Supabase.
-     * Paso 1: POST /orden
-     * Paso 2: POST /equipo con el orden_id recibido
+     * Supabase puede devolver HTTP 201 con body null — eso es éxito.
      */
     private void guardarOrden() {
         enlace.botonGuardar.setEnabled(false);
@@ -279,15 +206,10 @@ public class FragmentoNuevaOrden extends Fragment {
         datosOrden.put("descuento",  0.0);
 
         String contrasena = enlace.campoContrasena.getText().toString().trim();
-        if (!contrasena.isEmpty()) {
-            datosOrden.put("contrasena_equipo", contrasena);
-        }
+        if (!contrasena.isEmpty()) datosOrden.put("contrasena_equipo", contrasena);
 
-        String fechaPrometida = enlace.campoFechaPrometida.getText()
-                .toString().trim();
-        if (!fechaPrometida.isEmpty()) {
-            datosOrden.put("fecha_prometida", fechaPrometida);
-        }
+        String fechaPrometida = enlace.campoFechaPrometida.getText().toString().trim();
+        if (!fechaPrometida.isEmpty()) datosOrden.put("fecha_prometida", fechaPrometida);
 
         SupabaseCliente.obtenerServicio()
                 .crearOrden(datosOrden)
@@ -296,23 +218,34 @@ public class FragmentoNuevaOrden extends Fragment {
                     public void onResponse(@NonNull Call<Orden> c,
                                            @NonNull Response<Orden> r) {
                         if (enlace == null) return;
-                        if (r.isSuccessful() && r.body() != null) {
-                            crearEquipo(r.body().getId());
+                        Log.d(TAG, "Crear orden HTTP: " + r.code());
+
+                        // 201 = creado exitosamente (con o sin body)
+                        if (r.code() == 201 || r.isSuccessful()) {
+                            if (r.body() != null && r.body().getId() > 0) {
+                                Log.d(TAG, "Orden creada ID: " + r.body().getId());
+                                crearEquipo(r.body().getId());
+                            } else {
+                                // Body null pero orden creada — ir directo
+                                Log.d(TAG, "Orden creada sin ID en body");
+                                onOrdenCreada();
+                            }
                         } else {
                             mostrarError(getString(R.string.error_servidor));
                         }
                     }
 
                     @Override
-                    public void onFailure(@NonNull Call<Orden> c,
-                                          @NonNull Throwable e) {
+                    public void onFailure(@NonNull Call<Orden> c, @NonNull Throwable e) {
+                        Log.e(TAG, "Error crear orden: " + e.getMessage(), e);
                         mostrarError(getString(R.string.error_sin_internet));
                     }
                 });
     }
 
     /**
-     * Crea el equipo asociado a la orden recién creada.
+     * Crea el equipo asociado.
+     * Si falla igual navegamos — la orden ya fue creada.
      */
     private void crearEquipo(int ordenId) {
         Map<String, Object> datosEquipo = new HashMap<>();
@@ -331,6 +264,9 @@ public class FragmentoNuevaOrden extends Fragment {
                     @Override
                     public void onResponse(@NonNull Call<Equipo> c,
                                            @NonNull Response<Equipo> r) {
+                        // Siempre navegar si no hay error de red
+                        // El body null no es un error
+                        Log.d(TAG, "Crear equipo HTTP: " + r.code());
                         onOrdenCreada();
                     }
 
@@ -338,14 +274,12 @@ public class FragmentoNuevaOrden extends Fragment {
                     public void onFailure(@NonNull Call<Equipo> c,
                                           @NonNull Throwable e) {
                         // La orden se creó aunque el equipo fallara
+                        Log.e(TAG, "Error crear equipo: " + e.getMessage());
                         onOrdenCreada();
                     }
                 });
     }
 
-    /**
-     * Orden creada exitosamente — muestra mensaje y navega a la lista.
-     */
     private void onOrdenCreada() {
         if (enlace == null) return;
         enlace.progressGuardando.setVisibility(View.GONE);
@@ -358,9 +292,8 @@ public class FragmentoNuevaOrden extends Fragment {
         limpiarFormulario();
 
         enlace.getRoot().postDelayed(() -> {
-            if (getActivity() instanceof ActividadPrincipal) {
+            if (getActivity() instanceof ActividadPrincipal)
                 ((ActividadPrincipal) getActivity()).navegarA("ordenes");
-            }
         }, 1500);
     }
 
@@ -375,8 +308,7 @@ public class FragmentoNuevaOrden extends Fragment {
         DialogoNuevoCliente dialogo = new DialogoNuevoCliente(
                 empresaId, clienteCreado -> {
             clienteSeleccionado = clienteCreado;
-            enlace.campoCliente.setText(
-                    clienteCreado.getNombreCompleto());
+            enlace.campoCliente.setText(clienteCreado.getNombreCompleto());
         });
         dialogo.show(getParentFragmentManager(), "nuevo_cliente");
     }
