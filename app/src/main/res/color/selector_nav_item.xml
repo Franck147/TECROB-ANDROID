@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    selector_nav_item.xml — Cambia el color del ícono y texto
+    del Bottom Navigation según si el ítem está activo o no.
+
+    Activo   → rojo primario de la marca
+    Inactivo → gris secundario
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:color="@color/rojo_primario"
+        android:state_checked="true"/>
+    <item
+        android:color="@color/texto_secundario"/>
+</selector>

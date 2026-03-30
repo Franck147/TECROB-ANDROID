@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    activity_login.xml — Pantalla de inicio de sesión
+    ───────────────────────────────────────────────────
+    Diseño oscuro y elegante con:
+      - Logo + nombre de la empresa centrado
+      - Campos de email y contraseña (Material 3)
+      - Botón de ingreso (rojo corporativo)
+      - Indicador de carga mientras verifica credenciales
+-->
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/fondo_principal"
+    android:fillViewport="true">
+    <!--
+        fillViewport="true": hace que el ScrollView ocupe
+        toda la pantalla aunque el contenido sea pequeño.
+        Esto permite centrar verticalmente el formulario.
+    -->
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center_vertical"
+        android:padding="32dp">
+
+        <!-- ── LOGO Y NOMBRE ──────────────────────────────── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginBottom="48dp">
+
+            <!-- Cuadro rojo con la letra T (logo) -->
+            <TextView
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:text="T"
+                android:textColor="@color/colorOnPrimary"
+                android:textSize="36sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:background="@drawable/fondo_logo"
+                android:layout_marginBottom="16dp"/>
+
+            <!-- Nombre de la app -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/nombre_app"
+                android:textColor="@color/texto_principal"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.02"
+                android:layout_marginBottom="6dp"/>
+
+            <!-- Nombre de la empresa -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/nombre_empresa"
+                android:textColor="@color/texto_secundario"
+                android:textSize="12sp"
+                android:gravity="center"/>
+
+        </LinearLayout>
+
+        <!-- ── TÍTULO DEL FORMULARIO ─────────────────────── -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/titulo_login"
+            android:textColor="@color/texto_principal"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/subtitulo_login"
+            android:textColor="@color/texto_secundario"
+            android:textSize="13sp"
+            android:layout_marginBottom="28dp"/>
+
+        <!-- ── CAMPO EMAIL ────────────────────────────────── -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layout_email"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/hint_email"
+            style="@style/EstiloCampo"
+            android:layout_marginBottom="14dp"
+            app:startIconDrawable="@drawable/ic_email"
+            app:startIconTint="@color/texto_secundario">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/campo_email"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/texto_principal"
+                android:textColorHint="@color/texto_muted"
+                android:textSize="15sp"
+                android:inputType="textEmailAddress"
+                android:imeOptions="actionNext"
+                android:maxLines="1"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- ── CAMPO CONTRASEÑA ───────────────────────────── -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layout_contrasena"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/hint_contrasena"
+            style="@style/EstiloCampo"
+            android:layout_marginBottom="28dp"
+            app:startIconDrawable="@drawable/ic_candado"
+            app:startIconTint="@color/texto_secundario"
+            app:endIconMode="password_toggle"
+            app:endIconTint="@color/texto_secundario">
+            <!--
+                endIconMode="password_toggle": agrega el ojo
+                para mostrar/ocultar la contraseña automáticamente
+            -->
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/campo_contrasena"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/texto_principal"
+                android:textColorHint="@color/texto_muted"
+                android:textSize="15sp"
+                android:inputType="textPassword"
+                android:imeOptions="actionDone"
+                android:maxLines="1"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- ── BOTÓN INGRESAR ─────────────────────────────── -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/boton_ingresar"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="@string/btn_ingresar"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/colorOnPrimary"
+            android:letterSpacing="0.02"
+            style="@style/EstiloBotonPrimario"
+            android:layout_marginBottom="20dp"/>
+
+        <!-- ── INDICADOR DE CARGA ─────────────────────────── -->
+        <!--
+            Visible solo mientras se verifica con Supabase.
+            Se muestra/oculta desde ActividadLogin.java.
+        -->
+        <LinearLayout
+            android:id="@+id/contenedor_cargando"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:visibility="gone">
+
+            <ProgressBar
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:indeterminateTint="@color/rojo_primario"
+                android:layout_marginEnd="10dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/lbl_iniciando_sesion"
+                android:textColor="@color/texto_secundario"
+                android:textSize="13sp"/>
+
+        </LinearLayout>
+
+        <!-- ── VERSIÓN DE LA APP ──────────────────────────── -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/version_app"
+            android:textColor="@color/texto_muted"
+            android:textSize="11sp"
+            android:gravity="center"
+            android:layout_marginTop="40dp"/>
+
+    </LinearLayout>
+
+</androidx.core.widget.NestedScrollView>

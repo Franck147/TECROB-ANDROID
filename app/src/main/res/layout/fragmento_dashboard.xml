@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    fragmento_dashboard.xml — Pantalla de inicio con métricas del día
+    ──────────────────────────────────────────────────────────────────
+    Estructura:
+      SwipeRefreshLayout (jalar para refrescar)
+        NestedScrollView (scroll vertical)
+          LinearLayout
+            - Saludo + fecha de hoy
+            - Tarjetas de resumen (2 columnas)
+            - Sección "Órdenes recientes"
+            - RecyclerView de las últimas órdenes
+-->
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/swipe_refresh"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/fondo_principal">
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- ── SALUDO ──────────────────────────────────── -->
+            <TextView
+                android:id="@+id/text_bienvenida"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/lbl_hola"
+                android:textColor="@color/texto_principal"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:layout_marginTop="8dp"/>
+
+            <TextView
+                android:id="@+id/text_fecha_hoy"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/texto_secundario"
+                android:textSize="13sp"
+                android:layout_marginTop="2dp"
+                android:layout_marginBottom="24dp"/>
+
+            <!-- ── LABEL RESUMEN ──────────────────────────── -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/lbl_resumen_hoy"
+                android:textColor="@color/texto_muted"
+                android:textSize="11sp"
+                android:textAllCaps="true"
+                android:letterSpacing="0.1"
+                android:layout_marginBottom="10dp"/>
+
+            <!-- ── TARJETAS DE RESUMEN (2 columnas) ──────── -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="10dp">
+
+                <!-- Tarjeta: Órdenes activas -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="5dp"
+                    style="@style/EstiloCard">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/lbl_ordenes_activas"
+                            android:textColor="@color/texto_secundario"
+                            android:textSize="11sp"/>
+                        <TextView
+                            android:id="@+id/text_ordenes_activas"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--"
+                            android:textColor="@color/rojo_primario"
+                            android:textSize="30sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="4dp"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/lbl_desde_ayer"
+                            android:textColor="@color/texto_muted"
+                            android:textSize="11sp"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Tarjeta: Pendientes -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="5dp"
+                    style="@style/EstiloCard">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/lbl_ordenes_pendientes"
+                            android:textColor="@color/texto_secundario"
+                            android:textSize="11sp"/>
+                        <TextView
+                            android:id="@+id/text_ordenes_pendientes"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--"
+                            android:textColor="@color/texto_principal"
+                            android:textSize="30sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="4dp"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/lbl_por_atender"
+                            android:textColor="@color/texto_muted"
+                            android:textSize="11sp"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+
+            <!-- ── ENCABEZADO ÓRDENES RECIENTES ──────────── -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="10dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/lbl_ordenes_recientes"
+                    android:textColor="@color/texto_muted"
+                    android:textSize="11sp"
+                    android:textAllCaps="true"
+                    android:letterSpacing="0.1"/>
+
+                <TextView
+                    android:id="@+id/btn_ver_todas"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/lbl_ver_todas"
+                    android:textColor="@color/rojo_primario"
+                    android:textSize="12sp"
+                    android:padding="4dp"/>
+
+            </LinearLayout>
+
+            <!-- Lista de órdenes recientes (máximo 5) -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler_ordenes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"/>
+            <!--
+                nestedScrollingEnabled="false": evita conflictos
+                de scroll cuando el RecyclerView está dentro
+                de un NestedScrollView
+            -->
+
+            <!-- Mensaje cuando no hay órdenes -->
+            <TextView
+                android:id="@+id/texto_sin_ordenes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/msg_sin_ordenes"
+                android:textColor="@color/texto_secundario"
+                android:textSize="14sp"
+                android:gravity="center"
+                android:padding="32dp"
+                android:visibility="gone"/>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

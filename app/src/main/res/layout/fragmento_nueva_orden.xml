@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    fragmento_nueva_orden.xml — Formulario para crear una orden
+    ─────────────────────────────────────────────────────────────
+    Secciones:
+      1. Cliente (buscar o crear)
+      2. Tipo de equipo (chips)
+      3. Marca, modelo, serie
+      4. Desperfecto + estado general
+      5. Prioridad (chips)
+      6. Accesorios (chips múltiple)
+      7. Contraseña + fecha prometida
+      8. Botones guardar / cancelar
+-->
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/fondo_principal">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/titulo_nueva_orden"
+            android:textColor="@color/texto_principal"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="20dp"/>
+
+        <!-- ══ 1. CLIENTE ═══════════════════════════════════════ -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/seccion_cliente"
+            android:textColor="@color/rojo_primario"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.1"
+            android:layout_marginBottom="8dp"/>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layout_cliente"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/hint_buscar_cliente"
+            style="@style/EstiloCampo"
+            android:layout_marginBottom="8dp">
+            <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                android:id="@+id/campo_cliente"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/texto_principal"
+                android:textColorHint="@color/texto_muted"
+                android:textSize="14sp"
+                android:inputType="textPersonName"
+                android:completionThreshold="3"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/boton_nuevo_cliente"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_nuevo_cliente"
+            android:textSize="12sp"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            app:strokeColor="@color/fondo_borde"
+            android:textColor="@color/texto_secundario"
+            android:layout_marginBottom="20dp"/>
+
+        <!-- ══ 2. TIPO DE EQUIPO ════════════════════════════════ -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/seccion_equipo"
+            android:textColor="@color/rojo_primario"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.1"
+            android:layout_marginBottom="8dp"/>
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:layout_marginBottom="16dp">
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chip_group_equipo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:singleSelection="true"
+                app:selectionRequired="true">
+                <com.google.android.material.chip.Chip android:id="@+id/chip_laptop"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/equipo_laptop" style="@style/EstiloChip" android:checked="true"/>
+                <com.google.android.material.chip.Chip android:id="@+id/chip_computadora"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/equipo_pc" style="@style/EstiloChip"/>
+                <com.google.android.material.chip.Chip android:id="@+id/chip_impresora"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/equipo_impresora" style="@style/EstiloChip"/>
+                <com.google.android.material.chip.Chip android:id="@+id/chip_tablet"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/equipo_tablet" style="@style/EstiloChip"/>
+                <com.google.android.material.chip.Chip android:id="@+id/chip_celular"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/equipo_celular" style="@style/EstiloChip"/>
+                <com.google.android.material.chip.Chip android:id="@+id/chip_otro"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/equipo_otro" style="@style/EstiloChip"/>
+            </com.google.android.material.chip.ChipGroup>
+        </HorizontalScrollView>
+
+        <!-- ══ 3. DATOS DEL EQUIPO ══════════════════════════════ -->
+        <LinearLayout android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:orientation="horizontal"
+            android:layout_marginBottom="10dp">
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layout_marca"
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:layout_marginEnd="6dp"
+                android:hint="@string/hint_marca" style="@style/EstiloCampo">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/campo_marca"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:textColor="@color/texto_principal" android:textSize="14sp"
+                    android:inputType="textCapWords"/>
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:layout_marginStart="6dp"
+                android:hint="@string/hint_modelo" style="@style/EstiloCampo">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/campo_modelo"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:textColor="@color/texto_principal" android:textSize="14sp"
+                    android:inputType="textCapWords"/>
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:hint="@string/hint_serie" style="@style/EstiloCampo"
+            android:layout_marginBottom="16dp">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/campo_serie"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:textColor="@color/texto_principal" android:textSize="14sp"
+                android:inputType="textCapCharacters"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- ══ 4. DESPERFECTO ═══════════════════════════════════ -->
+        <TextView
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="@string/seccion_desperfecto"
+            android:textColor="@color/rojo_primario" android:textSize="11sp"
+            android:textStyle="bold" android:letterSpacing="0.1"
+            android:layout_marginBottom="8dp"/>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layout_desperfecto"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:hint="@string/hint_desperfecto" style="@style/EstiloCampo"
+            android:layout_marginBottom="10dp">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/campo_desperfecto"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:minLines="3" android:gravity="top"
+                android:textColor="@color/texto_principal" android:textSize="14sp"
+                android:inputType="textMultiLine"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:hint="@string/hint_descripcion_general" style="@style/EstiloCampo"
+            android:layout_marginBottom="16dp">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/campo_descripcion"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:minLines="2" android:gravity="top"
+                android:textColor="@color/texto_principal" android:textSize="14sp"
+                android:inputType="textMultiLine"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- ══ 5. PRIORIDAD ════════════════════════════════════ -->
+        <TextView
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="@string/seccion_prioridad"
+            android:textColor="@color/rojo_primario" android:textSize="11sp"
+            android:textStyle="bold" android:letterSpacing="0.1"
+            android:layout_marginBottom="8dp"/>
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chip_group_prioridad"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            app:singleSelection="true" app:selectionRequired="true"
+            android:layout_marginBottom="16dp">
+            <com.google.android.material.chip.Chip android:id="@+id/chip_baja"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/prioridad_baja" style="@style/EstiloChip"/>
+            <com.google.android.material.chip.Chip android:id="@+id/chip_normal"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/prioridad_normal" style="@style/EstiloChip" android:checked="true"/>
+            <com.google.android.material.chip.Chip android:id="@+id/chip_alta"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/prioridad_alta" style="@style/EstiloChip"/>
+            <com.google.android.material.chip.Chip android:id="@+id/chip_urgente"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/prioridad_urgente" style="@style/EstiloChip"/>
+        </com.google.android.material.chip.ChipGroup>
+
+        <!-- ══ 6. ACCESORIOS ═══════════════════════════════════ -->
+        <TextView
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="@string/seccion_accesorios"
+            android:textColor="@color/rojo_primario" android:textSize="11sp"
+            android:textStyle="bold" android:letterSpacing="0.1"
+            android:layout_marginBottom="8dp"/>
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chip_group_accesorios"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp">
+            <com.google.android.material.chip.Chip android:id="@+id/chip_funda"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/accesorio_funda" style="@style/EstiloChipAccesorio"/>
+            <com.google.android.material.chip.Chip android:id="@+id/chip_mouse"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/accesorio_mouse" style="@style/EstiloChipAccesorio"/>
+            <com.google.android.material.chip.Chip android:id="@+id/chip_cargador"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/accesorio_cargador" style="@style/EstiloChipAccesorio"/>
+            <com.google.android.material.chip.Chip android:id="@+id/chip_mochila"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/accesorio_mochila" style="@style/EstiloChipAccesorio"/>
+            <com.google.android.material.chip.Chip android:id="@+id/chip_cable_datos"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/accesorio_cable_datos" style="@style/EstiloChipAccesorio"/>
+            <com.google.android.material.chip.Chip android:id="@+id/chip_estabilizador"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/accesorio_estabilizador" style="@style/EstiloChipAccesorio"/>
+        </com.google.android.material.chip.ChipGroup>
+
+        <!-- ══ 7. DATOS EXTRA ══════════════════════════════════ -->
+        <LinearLayout android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:orientation="horizontal"
+            android:layout_marginBottom="24dp">
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:layout_marginEnd="6dp"
+                android:hint="@string/hint_contrasena_equipo" style="@style/EstiloCampo">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/campo_contrasena"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:textColor="@color/texto_principal" android:textSize="14sp"/>
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:layout_marginStart="6dp"
+                android:hint="@string/hint_fecha_prometida" style="@style/EstiloCampo">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/campo_fecha_prometida"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:textColor="@color/texto_principal" android:textSize="14sp"
+                    android:inputType="date"/>
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <!-- ProgressBar mientras guarda -->
+        <ProgressBar
+            android:id="@+id/progress_guardando"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:indeterminateTint="@color/rojo_primario"
+            android:visibility="gone" android:layout_marginBottom="8dp"/>
+
+        <!-- ══ 8. BOTONES ══════════════════════════════════════ -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/boton_guardar"
+            android:layout_width="match_parent" android:layout_height="56dp"
+            android:text="@string/btn_guardar_orden"
+            style="@style/EstiloBotonPrimario"
+            android:layout_marginBottom="8dp"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/boton_cancelar"
+            android:layout_width="match_parent" android:layout_height="52dp"
+            android:text="@string/btn_cancelar"
+            style="@style/EstiloBotonSecundario"
+            android:layout_marginBottom="16dp"/>
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

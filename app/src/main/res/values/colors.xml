@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    colors.xml — Paleta de colores de TecrobSys
+    ─────────────────────────────────────────────
+    Tema oscuro con acento rojo corporativo (#E85D5D).
+    Material Design 3 usa un sistema de colores basado en roles:
+      Primary    → color principal de la marca
+      Surface    → fondos de pantallas y tarjetas
+      On[Color]  → texto/iconos que van SOBRE ese color
+
+    REGLA: Nunca uses colores hexadecimales directamente
+    en los layouts. Siempre referencia desde aquí con @color/nombre
+-->
+<resources>
+
+    <!-- ════════════════════════════════════════════════════════
+         COLORES DE MARCA
+    ════════════════════════════════════════════════════════════ -->
+    <color name="rojo_primario">#E85D5D</color>
+    <color name="rojo_oscuro">#C43C3C</color>
+    <color name="rojo_claro">#FF8A8A</color>
+    <color name="rojo_contenedor">#2A1414</color>
+
+    <!-- ════════════════════════════════════════════════════════
+         SISTEMA DE COLORES MATERIAL 3
+         Roles semánticos que M3 usa internamente
+    ════════════════════════════════════════════════════════════ -->
+
+    <!-- Primary: color principal de la marca -->
+    <color name="md_theme_primary">#E85D5D</color>
+    <color name="md_theme_onPrimary">#FFFFFF</color>
+    <color name="md_theme_primaryContainer">#2A1414</color>
+    <color name="md_theme_onPrimaryContainer">#FFB3B3</color>
+
+    <!-- Secondary: color de apoyo -->
+    <color name="md_theme_secondary">#EF9F27</color>
+    <color name="md_theme_onSecondary">#1A1000</color>
+    <color name="md_theme_secondaryContainer">#2A1E10</color>
+    <color name="md_theme_onSecondaryContainer">#FFCC80</color>
+
+    <!-- Tertiary: color de acento -->
+    <color name="md_theme_tertiary">#3ECF8E</color>
+    <color name="md_theme_onTertiary">#001A0E</color>
+    <color name="md_theme_tertiaryContainer">#1A2A1A</color>
+    <color name="md_theme_onTertiaryContainer">#A0F0C8</color>
+
+    <!-- Error -->
+    <color name="md_theme_error">#FF5449</color>
+    <color name="md_theme_onError">#FFFFFF</color>
+    <color name="md_theme_errorContainer">#3A0A08</color>
+    <color name="md_theme_onErrorContainer">#FFB4AB</color>
+
+    <!-- Background: fondo principal de todas las pantallas -->
+    <color name="md_theme_background">#0D0D0F</color>
+    <color name="md_theme_onBackground">#E8E6E1</color>
+
+    <!-- Surface: fondo de tarjetas, sheets, bottom nav -->
+    <color name="md_theme_surface">#141416</color>
+    <color name="md_theme_onSurface">#E8E6E1</color>
+    <color name="md_theme_surfaceVariant">#1A1A1E</color>
+    <color name="md_theme_onSurfaceVariant">#888888</color>
+
+    <!-- Outline: bordes y divisores -->
+    <color name="md_theme_outline">#252529</color>
+    <color name="md_theme_outlineVariant">#1E1E22</color>
+
+    <!-- Surface tones (M3 elevation system) -->
+    <color name="md_theme_surfaceTint">#E85D5D</color>
+    <color name="md_theme_inverseSurface">#E8E6E1</color>
+    <color name="md_theme_inverseOnSurface">#141416</color>
+    <color name="md_theme_inversePrimary">#C43C3C</color>
+
+    <!-- ════════════════════════════════════════════════════════
+         ALIAS SEMÁNTICOS — para usar en los layouts
+         Más legibles que los nombres md_theme_*
+    ════════════════════════════════════════════════════════════ -->
+
+    <!-- Fondos -->
+    <color name="fondo_principal">@color/md_theme_background</color>
+    <color name="fondo_tarjeta">@color/md_theme_surface</color>
+    <color name="fondo_superficie">@color/md_theme_surfaceVariant</color>
+    <color name="fondo_borde">@color/md_theme_outline</color>
+
+    <!-- Textos -->
+    <color name="texto_principal">@color/md_theme_onBackground</color>
+    <color name="texto_secundario">@color/md_theme_onSurfaceVariant</color>
+    <color name="texto_muted">#555555</color>
+
+    <!-- Alias requeridos por el tema Material heredado -->
+    <color name="colorPrimary">@color/rojo_primario</color>
+    <color name="colorPrimaryDark">@color/rojo_oscuro</color>
+    <color name="colorAccent">@color/rojo_primario</color>
+    <color name="colorOnPrimary">#FFFFFF</color>
+
+    <!-- ════════════════════════════════════════════════════════
+         ESTADOS DE ÓRDENES
+         Cada estado tiene: fondo oscuro + texto legible
+    ════════════════════════════════════════════════════════════ -->
+
+    <!-- Pendiente: rojo -->
+    <color name="estado_pendiente_fondo">#2A1414</color>
+    <color name="estado_pendiente_texto">#E85D5D</color>
+
+    <!-- Diagnóstico: naranja -->
+    <color name="estado_diagnostico_fondo">#2A1E10</color>
+    <color name="estado_diagnostico_texto">#EF9F27</color>
+
+    <!-- En progreso: verde -->
+    <color name="estado_progreso_fondo">#1A2A1A</color>
+    <color name="estado_progreso_texto">#3ECF8E</color>
+
+    <!-- Listo: azul -->
+    <color name="estado_listo_fondo">#1A1A2A</color>
+    <color name="estado_listo_texto">#6B8CFF</color>
+
+    <!-- Entregado: gris -->
+    <color name="estado_entregado_fondo">#1E1E22</color>
+    <color name="estado_entregado_texto">#888888</color>
+
+    <!-- Cancelado: rojo apagado -->
+    <color name="estado_cancelado_fondo">#2A1010</color>
+    <color name="estado_cancelado_texto">#CC6666</color>
+
+    <!-- Desconocido -->
+    <color name="estado_desconocido_fondo">#1E1E22</color>
+    <color name="estado_desconocido_texto">#666666</color>
+
+    <!-- ════════════════════════════════════════════════════════
+         COLORES ESPECIALES
+    ════════════════════════════════════════════════════════════ -->
+    <color name="verde_whatsapp">#25D366</color>
+    <color name="verde_whatsapp_fondo">#1A2A1E</color>
+
+</resources>

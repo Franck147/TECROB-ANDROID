@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    menu_navegacion.xml — Ítems del Bottom Navigation de TecrobSys.
+
+    Cada <item> representa una pestaña del menú inferior.
+    Los íconos usan Material Symbols incluidos en la librería
+    de Material Design 3 — no necesitamos crear archivos XML
+    de íconos manualmente.
+
+    Íconos disponibles en: fonts.google.com/icons
+    Busca el nombre del ícono y usa el prefijo @drawable/ic_
+    que Material incluye automáticamente.
+-->
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Dashboard: pantalla de inicio con métricas del día -->
+    <item
+        android:id="@+id/nav_dashboard"
+        android:icon="@drawable/ic_dashboard"
+        android:title="@string/nav_dashboard"/>
+
+    <!-- Lista completa de órdenes con filtros -->
+    <item
+        android:id="@+id/nav_ordenes"
+        android:icon="@drawable/ic_ordenes"
+        android:title="@string/nav_ordenes"/>
+
+    <!--
+        Nueva orden — ítem central.
+        El ícono se oculta visualmente porque usamos un FAB
+        (FloatingActionButton) encima del BottomNavigation.
+        El espacio vacío en el centro es intencional.
+    -->
+    <item
+        android:id="@+id/nav_nueva"
+        android:icon="@drawable/ic_agregar"
+        android:title="@string/nav_nueva"/>
+
+    <!-- Catálogo de servicios y repuestos -->
+    <item
+        android:id="@+id/nav_catalogo"
+        android:icon="@drawable/ic_catalogo"
+        android:title="@string/nav_catalogo"/>
+
+    <!-- Configuración del taller -->
+    <item
+        android:id="@+id/nav_config"
+        android:icon="@drawable/ic_configuracion"
+        android:title="@string/nav_config"/>
+
+</menu>

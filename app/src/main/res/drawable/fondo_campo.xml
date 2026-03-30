@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    fondo_campo.xml — Fondo de los campos de texto del formulario.
+    Esquinas redondeadas, fondo de tarjeta, borde sutil.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="12dp"/>
+    <solid android:color="@color/fondo_tarjeta"/>
+    <stroke
+        android:width="0.5dp"
+        android:color="@color/fondo_borde"/>
+</shape>

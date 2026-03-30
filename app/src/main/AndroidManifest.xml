@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    AndroidManifest.xml — Configuración central de TecrobSys
+    Define permisos, actividades y el tema global de la app.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- ── PERMISOS ──────────────────────────────────────────────── -->
+
+    <!-- Requerido para llamar a la API REST de Supabase -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Verificar si hay conexión antes de hacer llamadas a Supabase -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
+    <!-- Para el botón "Llamar al cliente" en el detalle de orden -->
+    <uses-permission android:name="android.permission.CALL_PHONE"/>
+
+    <!-- ── APLICACIÓN ─────────────────────────────────────────────── -->
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/nombre_app"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Tema.TecrobSys"
+        tools:targetApi="31">
+
+        <!--
+            ActividadLogin — Primera pantalla que ve el usuario.
+            exported="true" porque el sistema Android la lanza directamente.
+            windowSoftInputMode="adjustResize" para que el teclado
+            no tape los campos de texto.
+        -->
+        <activity
+            android:name=".actividades.ActividadLogin"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+        <!--
+            ActividadPrincipal — Contenedor de todos los fragmentos.
+            Se abre después del login exitoso.
+            exported="false" porque solo nuestra app la abre.
+        -->
+        <activity
+            android:name=".actividades.ActividadPrincipal"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"/>
+
+    </application>
+
+</manifest>

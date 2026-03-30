@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    fondo_avatar.xml — Círculo de fondo para las iniciales
+    del cliente y técnico en las tarjetas de órdenes.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/estado_pendiente_fondo"/>
+</shape>

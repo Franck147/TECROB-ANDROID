@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    fondo_badge.xml — Fondo píldora para los badges de
+    prioridad URGENTE y ALTA en las tarjetas de órdenes.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="99dp"/>
+    <solid android:color="@color/estado_pendiente_fondo"/>
+    <stroke
+        android:width="0.5dp"
+        android:color="@color/estado_pendiente_texto"/>
+</shape>

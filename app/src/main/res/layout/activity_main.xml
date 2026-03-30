@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    activity_main.xml — Layout principal de TecrobSys
+    ───────────────────────────────────────────────────
+    Estructura:
+      CoordinatorLayout (raíz — coordina FAB + BottomNav)
+        ├── FrameLayout (contenedor de fragmentos)
+        └── LinearLayout (bottom: BottomNavigationView + FAB)
+
+    El CoordinatorLayout permite que el FAB se posicione
+    correctamente sobre el BottomNavigationView usando
+    el sistema de comportamiento de Material Design 3.
+-->
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/fondo_principal">
+
+    <!--
+        Contenedor principal donde se intercambian los fragmentos.
+        paddingBottom: deja espacio para que el contenido
+        no quede oculto detrás del BottomNavigationView.
+    -->
+    <FrameLayout
+        android:id="@+id/contenedor_fragmento"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingBottom="80dp"/>
+
+    <!--
+        Bottom Navigation View — Material Design 3
+        Posicionado al fondo de la pantalla.
+        El color de fondo e íconos se definen en themes.xml
+        a través de EstiloNavegacionInferior.
+    -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/navegacion_inferior"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@color/fondo_superficie"
+        app:menu="@menu/menu_navegacion"
+        app:itemIconTint="@color/selector_nav_item"
+        app:itemTextColor="@color/selector_nav_item"
+        app:labelVisibilityMode="labeled"
+        app:elevation="0dp"/>
+    <!--
+        itemIconTint: controla el color de los íconos
+        itemTextColor: controla el color del texto
+        Ambos usan selector_nav_item.xml que cambia entre
+        rojo (activo) y gris (inactivo) automáticamente.
+        labelVisibilityMode="labeled": siempre muestra el texto.
+    -->
+
+    <!--
+        FAB Central — Botón para crear nueva orden.
+        Se posiciona encima del BottomNavigation en el centro.
+        layout_gravity="bottom|center_horizontal" lo centra.
+        layout_marginBottom="28dp" lo eleva sobre el nav bar.
+    -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_nueva_orden"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="28dp"
+        android:contentDescription="@string/nav_nueva"
+        app:srcCompat="@drawable/ic_agregar"
+        app:backgroundTint="@color/rojo_primario"
+        app:tint="@color/colorOnPrimary"
+        app:fabSize="normal"
+        app:elevation="6dp"
+        app:pressedTranslationZ="12dp"/>
+    <!--
+        pressedTranslationZ: efecto de elevación al presionar el FAB
+        backgroundTint: color de fondo del botón (rojo)
+        tint: color del ícono (blanco)
+    -->
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

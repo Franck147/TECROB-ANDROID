@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    item_orden.xml — Tarjeta de cada orden en la lista
+    ────────────────────────────────────────────────────
+    Muestra:
+      - Número de orden + badge de estado + badge de prioridad
+      - Nombre del cliente
+      - Marca/modelo del equipo + desperfecto resumido
+      - Avatar + nombre del técnico + precio total
+-->
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    style="@style/EstiloCard"
+    android:clickable="true"
+    android:focusable="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="14dp">
+
+        <!-- ── FILA SUPERIOR: número + badges ──────────────── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+
+            <!-- Número de orden -->
+            <TextView
+                android:id="@+id/text_numero_orden"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="ORD-0041"
+                android:textColor="@color/rojo_primario"
+                android:textSize="12sp"
+                android:textStyle="bold"/>
+
+            <!-- Badge de prioridad (visible solo si es ALTA o URGENTE) -->
+            <TextView
+                android:id="@+id/badge_prioridad"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="URGENTE"
+                android:textColor="@color/estado_pendiente_texto"
+                android:textSize="9sp"
+                android:textStyle="bold"
+                android:background="@drawable/fondo_badge"
+                android:paddingStart="7dp"
+                android:paddingEnd="7dp"
+                android:paddingTop="3dp"
+                android:paddingBottom="3dp"
+                android:layout_marginEnd="6dp"
+                android:visibility="gone"/>
+
+            <!-- Chip de estado con color dinámico -->
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_estado"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:text="Pendiente"
+                android:textSize="10sp"
+                app:chipMinHeight="32dp"
+                app:chipStrokeWidth="0dp"
+                style="@style/EstiloChip"/>
+
+        </LinearLayout>
+
+        <!-- ── NOMBRE DEL CLIENTE ───────────────────────────── -->
+        <TextView
+            android:id="@+id/text_nombre_cliente"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Carlos Mendoza"
+            android:textColor="@color/texto_principal"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="3dp"/>
+
+        <!-- ── EQUIPO + DESPERFECTO ─────────────────────────── -->
+        <TextView
+            android:id="@+id/text_descripcion_equipo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="HP Pavilion 15 · No carga la batería"
+            android:textColor="@color/texto_secundario"
+            android:textSize="12sp"
+            android:maxLines="2"
+            android:ellipsize="end"/>
+
+        <!-- ── DIVISOR ──────────────────────────────────────── -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="@color/fondo_borde"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="10dp"/>
+
+        <!-- ── FILA INFERIOR: técnico + precio ─────────────── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <!-- Avatar circular con iniciales del técnico -->
+            <TextView
+                android:id="@+id/text_iniciales_tecnico"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:text="NQ"
+                android:textColor="@color/rojo_primario"
+                android:textSize="8sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:background="@drawable/fondo_avatar"
+                android:layout_marginEnd="6dp"/>
+
+            <!-- Nombre del técnico abreviado -->
+            <TextView
+                android:id="@+id/text_nombre_tecnico"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Nelson Q."
+                android:textColor="@color/texto_secundario"
+                android:textSize="11sp"/>
+
+            <!-- Precio total -->
+            <TextView
+                android:id="@+id/text_precio_total"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="S/ 80.00"
+                android:textColor="@color/texto_principal"
+                android:textSize="14sp"
+                android:textStyle="bold"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    item_servicio.xml — Tarjeta de cada servicio en el catálogo
+    ─────────────────────────────────────────────────────────────
+    Muestra:
+      - Nombre del servicio
+      - Categoría (mantenimiento, software, repuesto, etc.)
+      - Precio base formateado: "S/ 35.00"
+      - Botón "+" para agregar a una orden
+-->
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    style="@style/EstiloCard"
+    android:clickable="true"
+    android:focusable="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="14dp">
+
+        <!-- Información del servicio -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginEnd="12dp">
+
+            <!-- Nombre del servicio -->
+            <TextView
+                android:id="@+id/text_nombre_servicio"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Limpieza interna"
+                android:textColor="@color/texto_principal"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="3dp"/>
+
+            <!-- Categoría -->
+            <TextView
+                android:id="@+id/text_categoria_servicio"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mantenimiento"
+                android:textColor="@color/texto_secundario"
+                android:textSize="12sp"/>
+
+        </LinearLayout>
+
+        <!-- Precio + botón agregar -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <!-- Precio -->
+            <TextView
+                android:id="@+id/text_precio_servicio"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="S/ 35.00"
+                android:textColor="@color/rojo_primario"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:layout_marginEnd="10dp"/>
+
+            <!-- Botón agregar -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/boton_agregar_servicio"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:text="+"
+                android:textSize="18sp"
+                android:textColor="@color/rojo_primario"
+                android:padding="0dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                app:strokeColor="@color/rojo_primario"
+                app:cornerRadius="10dp"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

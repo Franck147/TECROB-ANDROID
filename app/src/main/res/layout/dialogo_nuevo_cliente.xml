@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    dialogo_nuevo_cliente.xml — Formulario para registrar un cliente nuevo.
+    Se muestra como un BottomSheet Dialog desde FragmentoNuevaOrden.
+    Campos: nombre, apellido, teléfono (obligatorio), DNI, email, dirección.
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="@color/fondo_superficie">
+
+    <!-- Título del diálogo -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/titulo_nuevo_cliente"
+        android:textColor="@color/texto_principal"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="20dp"/>
+
+    <!-- Nombre y Apellido en 2 columnas -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="12dp">
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            android:hint="@string/hint_nombre"
+            style="@style/EstiloCampo">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/campo_nombre_cliente"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/texto_principal"
+                android:textSize="14sp"
+                android:inputType="textPersonName"
+                android:imeOptions="actionNext"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:hint="@string/hint_apellido"
+            style="@style/EstiloCampo">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/campo_apellido_cliente"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/texto_principal"
+                android:textSize="14sp"
+                android:inputType="textPersonName"
+                android:imeOptions="actionNext"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+    </LinearLayout>
+
+    <!-- Teléfono (obligatorio) -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layout_telefono_cliente"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/hint_telefono"
+        style="@style/EstiloCampo"
+        android:layout_marginBottom="12dp"
+        app:startIconDrawable="@drawable/ic_candado"
+        app:startIconTint="@color/texto_secundario">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/campo_telefono_cliente"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/texto_principal"
+            android:textSize="14sp"
+            android:inputType="phone"
+            android:imeOptions="actionNext"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- DNI y Email en 2 columnas -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="12dp">
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            android:hint="@string/hint_dni"
+            style="@style/EstiloCampo">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/campo_dni_cliente"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/texto_principal"
+                android:textSize="14sp"
+                android:inputType="number"
+                android:maxLength="8"
+                android:imeOptions="actionNext"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:hint="@string/hint_email_cliente"
+            style="@style/EstiloCampo">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/campo_email_cliente"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/texto_principal"
+                android:textSize="14sp"
+                android:inputType="textEmailAddress"
+                android:imeOptions="actionNext"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+    </LinearLayout>
+
+    <!-- Dirección -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/hint_direccion"
+        style="@style/EstiloCampo"
+        android:layout_marginBottom="20dp">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/campo_direccion_cliente"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/texto_principal"
+            android:textSize="14sp"
+            android:inputType="textPostalAddress"
+            android:imeOptions="actionDone"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- ProgressBar mientras guarda -->
+    <ProgressBar
+        android:id="@+id/progress_guardando_cliente"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:indeterminateTint="@color/rojo_primario"
+        android:visibility="gone"
+        android:layout_marginBottom="8dp"/>
+
+    <!-- Botones -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/boton_guardar_cliente"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:text="@string/btn_guardar_cliente"
+        android:textSize="14sp"
+        style="@style/EstiloBotonPrimario"
+        android:layout_marginBottom="8dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/boton_cancelar_cliente"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="@string/btn_cancelar"
+        android:textSize="13sp"
+        style="@style/EstiloBotonSecundario"/>
+
+</LinearLayout>

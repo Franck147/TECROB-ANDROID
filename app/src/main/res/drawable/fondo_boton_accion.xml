@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    fondo_boton_accion.xml — Fondo para los botones de acción
+    en el detalle de orden (Llamar, WhatsApp, PDF, Editar).
+    Tarjeta oscura con borde sutil y esquinas redondeadas.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="16dp"/>
+    <solid android:color="@color/fondo_tarjeta"/>
+    <stroke
+        android:width="0.5dp"
+        android:color="@color/fondo_borde"/>
+</shape>
