@@ -147,7 +147,7 @@ public class FragmentoDetalleOrden extends Fragment {
         // ── Cliente ───────────────────────────────────────────────
         if (ordenActual.getCliente() != null) {
             Orden.ClienteResumen cli = ordenActual.getCliente();
-            enlace.textInicalesCliente.setText(cli.getIniciales());
+            enlace.textInicialesCliente.setText(cli.getIniciales());
             enlace.textNombreCliente.setText(cli.getNombreCompleto());
             enlace.textTelefonoCliente.setText(
                     cli.getTelefono() != null ? cli.getTelefono() : "—");

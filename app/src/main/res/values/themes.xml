@@ -1,88 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    themes.xml — Tema Material Design 3 para TecrobSys
-    ─────────────────────────────────────────────────────
-    Hereda de Theme.Material3.DayNight.NoActionBar que activa:
-      - Sistema de colores dinámico (Material You)
-      - Componentes M3 actualizados (botones, chips, cards, etc.)
-      - Tipografía M3 (Roboto Flex por defecto)
-      - Elevación con tinte de color (no sombras)
-
-    NoActionBar: desactiva la ActionBar por defecto porque
-    usaremos TopAppBar de M3 en cada fragmento.
--->
 <resources>
 
-    <!-- ════════════════════════════════════════════════════════
-         TEMA PRINCIPAL
-    ════════════════════════════════════════════════════════════ -->
-    <style name="Tema.TecrobSys"
-        parent="Theme.Material3.DayNight.NoActionBar">
-
-        <!-- ── Colores del sistema M3 ────────────────────────── -->
+    <style name="Tema.TecrobSys" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/md_theme_primary</item>
         <item name="colorOnPrimary">@color/md_theme_onPrimary</item>
         <item name="colorPrimaryContainer">@color/md_theme_primaryContainer</item>
         <item name="colorOnPrimaryContainer">@color/md_theme_onPrimaryContainer</item>
-
         <item name="colorSecondary">@color/md_theme_secondary</item>
         <item name="colorOnSecondary">@color/md_theme_onSecondary</item>
         <item name="colorSecondaryContainer">@color/md_theme_secondaryContainer</item>
         <item name="colorOnSecondaryContainer">@color/md_theme_onSecondaryContainer</item>
-
         <item name="colorTertiary">@color/md_theme_tertiary</item>
         <item name="colorOnTertiary">@color/md_theme_onTertiary</item>
         <item name="colorTertiaryContainer">@color/md_theme_tertiaryContainer</item>
         <item name="colorOnTertiaryContainer">@color/md_theme_onTertiaryContainer</item>
-
         <item name="colorError">@color/md_theme_error</item>
         <item name="colorOnError">@color/md_theme_onError</item>
         <item name="colorErrorContainer">@color/md_theme_errorContainer</item>
         <item name="colorOnErrorContainer">@color/md_theme_onErrorContainer</item>
-
         <item name="android:colorBackground">@color/md_theme_background</item>
         <item name="colorOnBackground">@color/md_theme_onBackground</item>
-
         <item name="colorSurface">@color/md_theme_surface</item>
         <item name="colorOnSurface">@color/md_theme_onSurface</item>
         <item name="colorSurfaceVariant">@color/md_theme_surfaceVariant</item>
         <item name="colorOnSurfaceVariant">@color/md_theme_onSurfaceVariant</item>
-
         <item name="colorOutline">@color/md_theme_outline</item>
         <item name="colorOutlineVariant">@color/md_theme_outlineVariant</item>
-
-        <item name="colorSurfaceTint">@color/md_theme_surfaceTint</item>
-        <item name="colorInverseSurface">@color/md_theme_inverseSurface</item>
-        <item name="colorInverseOnSurface">@color/md_theme_inverseOnSurface</item>
-        <item name="colorInversePrimary">@color/md_theme_inversePrimary</item>
-
-        <!-- ── Ventana y barras del sistema ──────────────────── -->
         <item name="android:windowBackground">@color/md_theme_background</item>
         <item name="android:statusBarColor">@color/md_theme_background</item>
         <item name="android:navigationBarColor">@color/md_theme_surfaceVariant</item>
-
-        <!-- ── Textos ─────────────────────────────────────────── -->
         <item name="android:textColorPrimary">@color/md_theme_onBackground</item>
         <item name="android:textColorSecondary">@color/md_theme_onSurfaceVariant</item>
-
-        <!-- ── Estilo global de campos de texto ──────────────── -->
-        <item name="textInputStyle">@style/EstiloCampo</item>
-
-        <!-- ── Ripple al tocar (rojo translúcido) ────────────── -->
         <item name="colorControlHighlight">#33E85D5D</item>
-
-        <!-- ── Estilo de la NavigationBar inferior ───────────── -->
-        <item name="navigationBarStyle">@style/EstiloNavegacionInferior</item>
-
     </style>
 
-    <!-- ════════════════════════════════════════════════════════
-         CAMPO DE TEXTO — TextInputLayout
-         Fondo oscuro, borde sutil, esquinas redondeadas.
-         Se aplica automáticamente a todos los campos de la app.
-    ════════════════════════════════════════════════════════════ -->
-    <style name="EstiloCampo"
-        parent="Widget.Material3.TextInputLayout.OutlinedBox">
+    <!-- Campo de texto -->
+    <style name="EstiloCampo" parent="Widget.Material3.TextInputLayout.OutlinedBox">
         <item name="boxBackgroundColor">@color/fondo_tarjeta</item>
         <item name="boxStrokeColor">@color/fondo_borde</item>
         <item name="boxStrokeWidth">0.5dp</item>
@@ -94,13 +47,8 @@
         <item name="android:textColorHint">@color/texto_muted</item>
     </style>
 
-    <!-- ════════════════════════════════════════════════════════
-         CHIP DE SELECCIÓN ÚNICA
-         Usado en: tipo de equipo, prioridad, filtros de órdenes.
-         Al seleccionar: fondo rojizo + borde rojo.
-    ════════════════════════════════════════════════════════════ -->
-    <style name="EstiloChip"
-        parent="Widget.Material3.Chip.Filter">
+    <!-- Chip selección única -->
+    <style name="EstiloChip" parent="Widget.Material3.Chip.Filter">
         <item name="chipBackgroundColor">@color/fondo_tarjeta</item>
         <item name="chipStrokeColor">@color/fondo_borde</item>
         <item name="chipStrokeWidth">0.5dp</item>
@@ -111,13 +59,8 @@
         <item name="chipMinHeight">36dp</item>
     </style>
 
-    <!-- ════════════════════════════════════════════════════════
-         CHIP DE ACCESORIOS (selección múltiple)
-         Igual que EstiloChip pero permite varios seleccionados.
-         Usado en: lista de accesorios de la nueva orden.
-    ════════════════════════════════════════════════════════════ -->
-    <style name="EstiloChipAccesorio"
-        parent="Widget.Material3.Chip.Filter">
+    <!-- Chip accesorios selección múltiple -->
+    <style name="EstiloChipAccesorio" parent="Widget.Material3.Chip.Filter">
         <item name="chipBackgroundColor">@color/fondo_tarjeta</item>
         <item name="chipStrokeColor">@color/fondo_borde</item>
         <item name="chipStrokeWidth">0.5dp</item>
@@ -128,13 +71,8 @@
         <item name="chipMinHeight">36dp</item>
     </style>
 
-    <!-- ════════════════════════════════════════════════════════
-         BOTÓN PRIMARIO
-         Usado en: Guardar orden, Ingresar, Confirmar.
-         Fondo rojo, texto blanco, esquinas muy redondeadas.
-    ════════════════════════════════════════════════════════════ -->
-    <style name="EstiloBotonPrimario"
-        parent="Widget.Material3.Button">
+    <!-- Botón primario -->
+    <style name="EstiloBotonPrimario" parent="Widget.Material3.Button">
         <item name="backgroundTint">@color/rojo_primario</item>
         <item name="android:textColor">@color/colorOnPrimary</item>
         <item name="cornerRadius">14dp</item>
@@ -142,53 +80,16 @@
         <item name="android:letterSpacing">0.01</item>
     </style>
 
-    <!-- ════════════════════════════════════════════════════════
-         BOTÓN SECUNDARIO (Outlined)
-         Usado en: Cancelar, opciones alternativas.
-         Sin fondo, borde sutil, texto gris.
-    ════════════════════════════════════════════════════════════ -->
-    <style name="EstiloBotonSecundario"
-        parent="Widget.Material3.Button.OutlinedButton">
+    <!-- Botón secundario -->
+    <style name="EstiloBotonSecundario" parent="Widget.Material3.Button.OutlinedButton">
         <item name="strokeColor">@color/fondo_borde</item>
         <item name="android:textColor">@color/texto_secundario</item>
         <item name="cornerRadius">14dp</item>
         <item name="android:textSize">13sp</item>
     </style>
 
-    <!-- ════════════════════════════════════════════════════════
-         BARRA DE NAVEGACIÓN INFERIOR
-         Fondo oscuro, sin elevación visible,
-         íconos y texto que cambian de color al seleccionar.
-    ════════════════════════════════════════════════════════════ -->
-    <style name="EstiloNavegacionInferior"
-        parent="Widget.Material3.NavigationBar">
-        <item name="android:background">@color/fondo_superficie</item>
-        <item name="itemIconTint">@color/selector_nav_item</item>
-        <item name="itemTextColor">@color/selector_nav_item</item>
-        <item name="elevation">0dp</item>
-        <item name="itemActiveIndicatorStyle">
-            @style/EstiloIndicadorNavActivo
-        </item>
-    </style>
-
-    <!-- Indicador del ítem activo en el Bottom Navigation -->
-    <style name="EstiloIndicadorNavActivo"
-        parent="Widget.Material3.NavigationBar.ActiveIndicator">
-        <item name="android:color">@color/rojo_contenedor</item>
-        <item name="shapeAppearance">@style/FormaIndicadorNav</item>
-    </style>
-
-    <!-- Forma redondeada del indicador activo -->
-    <style name="FormaIndicadorNav" parent="">
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">50%</item>
-    </style>
-
-    <!-- ════════════════════════════════════════════════════════
-         CARD VIEW — Tarjetas de órdenes y servicios
-    ════════════════════════════════════════════════════════════ -->
-    <style name="EstiloCard"
-        parent="Widget.Material3.CardView.Filled">
+    <!-- Card -->
+    <style name="EstiloCard" parent="Widget.Material3.CardView.Filled">
         <item name="cardBackgroundColor">@color/fondo_tarjeta</item>
         <item name="cardElevation">0dp</item>
         <item name="cardCornerRadius">16dp</item>
