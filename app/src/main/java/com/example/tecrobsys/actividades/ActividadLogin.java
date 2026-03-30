@@ -2,6 +2,7 @@ package com.example.tecrobsys.actividades;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import androidx.appcompat.app.AppCompatActivity;
@@ -17,52 +18,31 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-/**
- * ActividadLogin — Primera pantalla de la app.
- *
- * Flujo:
- *  1. Usuario ingresa email + contraseña
- *  2. Se llama al endpoint de autenticación de Supabase
- *  3. Supabase devuelve un token JWT si las credenciales son correctas
- *  4. Guardamos el token en SesionManager (cifrado)
- *  5. Navegamos a ActividadPrincipal
- *
- * Si ya hay una sesión activa (token guardado), se salta
- * directamente a ActividadPrincipal sin mostrar el login.
- */
 public class ActividadLogin extends AppCompatActivity {
 
-    // ViewBinding — acceso seguro a las vistas sin findViewById
-    private ActivityLoginBinding enlace;
+    private static final String TAG = "TECROB_LOGIN";
 
-    // Maneja la sesión del usuario (token JWT cifrado)
+    private ActivityLoginBinding enlace;
     private SesionManager sesionManager;
 
     @Override
     protected void onCreate(Bundle estadoGuardado) {
         super.onCreate(estadoGuardado);
-
-        // Inflar el layout usando ViewBinding
         enlace = ActivityLoginBinding.inflate(getLayoutInflater());
         setContentView(enlace.getRoot());
 
         sesionManager = SesionManager.obtenerInstancia(this);
 
-        // Si ya hay sesión activa, ir directo al dashboard
         if (sesionManager.estaAutenticado()) {
+            Log.d(TAG, "Sesión activa encontrada, saltando al dashboard");
             irAActividadPrincipal();
-            return; // No continuar cargando el login
+            return;
         }
 
         configurarCampos();
         configurarBotonIngresar();
     }
 
-    /**
-     * Configura el comportamiento de los campos de texto.
-     * Al presionar "Done" en el teclado del campo contraseña,
-     * se dispara el login automáticamente.
-     */
     private void configurarCampos() {
         enlace.campoContrasena.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
@@ -73,25 +53,14 @@ public class ActividadLogin extends AppCompatActivity {
         });
     }
 
-    /**
-     * Configura el botón de ingresar.
-     */
     private void configurarBotonIngresar() {
         enlace.botonIngresar.setOnClickListener(v -> intentarLogin());
     }
 
-    /**
-     * Valida los campos y llama al endpoint de autenticación de Supabase.
-     *
-     * Endpoint: POST /auth/v1/token?grant_type=password
-     * Body: { "email": "...", "password": "..." }
-     * Respuesta: { "access_token": "...", "user": { ... } }
-     */
     private void intentarLogin() {
         String email = enlace.campoEmail.getText().toString().trim();
         String contrasena = enlace.campoContrasena.getText().toString().trim();
 
-        // ── Validaciones ──────────────────────────────────────
         if (email.isEmpty()) {
             enlace.layoutEmail.setError(getString(R.string.error_email_vacio));
             return;
@@ -106,15 +75,13 @@ public class ActividadLogin extends AppCompatActivity {
             enlace.layoutContrasena.setError(null);
         }
 
-        // ── Mostrar indicador de carga ────────────────────────
         mostrarCargando(true);
+        Log.d(TAG, "Intentando login con email: " + email);
 
-        // ── Construir el cuerpo del request ───────────────────
         Map<String, String> credenciales = new HashMap<>();
         credenciales.put("email", email);
         credenciales.put("password", contrasena);
 
-        // ── Llamar al endpoint de auth de Supabase ────────────
         SupabaseCliente.obtenerServicioAuth()
                 .iniciarSesion(credenciales)
                 .enqueue(new Callback<SupabaseServicio.RespuestaAuth>() {
@@ -126,26 +93,32 @@ public class ActividadLogin extends AppCompatActivity {
 
                         mostrarCargando(false);
 
-                        if (respuesta.isSuccessful() && respuesta.body() != null) {
-                            // ── Login exitoso ─────────────────
-                            SupabaseServicio.RespuestaAuth auth = respuesta.body();
+                        Log.d(TAG, "Respuesta recibida. Código HTTP: "
+                                + respuesta.code());
 
-                            // Guardar el token JWT de forma segura
-                            // Por ahora usamos empresa_id=1 y tecnico_id=1
-                            // En producción estos vienen del perfil del usuario
+                        if (respuesta.isSuccessful() && respuesta.body() != null) {
+                            Log.d(TAG, "Login exitoso. Token recibido.");
+                            SupabaseServicio.RespuestaAuth auth = respuesta.body();
                             sesionManager.guardarSesion(
                                     auth.tokenAcceso,
-                                    1,          // empresa_id
-                                    1,          // tecnico_id
-                                    "Nelson",   // nombre (temporal)
+                                    1,
+                                    1,
+                                    "Nelson",
                                     email
                             );
-
-                            // Ir al dashboard
                             irAActividadPrincipal();
-
                         } else {
-                            // ── Credenciales incorrectas ──────
+                            // Loguear el cuerpo del error de Supabase
+                            try {
+                                String errorBody = respuesta.errorBody() != null
+                                        ? respuesta.errorBody().string()
+                                        : "sin cuerpo de error";
+                                Log.e(TAG, "Error HTTP " + respuesta.code()
+                                        + " — " + errorBody);
+                            } catch (Exception e) {
+                                Log.e(TAG, "No se pudo leer el error: "
+                                        + e.getMessage());
+                            }
                             mostrarError(getString(R.string.error_credenciales));
                         }
                     }
@@ -156,27 +129,20 @@ public class ActividadLogin extends AppCompatActivity {
                             Throwable error) {
 
                         mostrarCargando(false);
+                        // Este log nos dirá exactamente qué falló
+                        Log.e(TAG, "onFailure — Error de red: "
+                                + error.getClass().getSimpleName()
+                                + " — " + error.getMessage(), error);
                         mostrarError(getString(R.string.error_sin_internet));
                     }
                 });
     }
 
-    /**
-     * Navega a ActividadPrincipal y cierra el login.
-     * finish() evita que el usuario vuelva al login con el botón Back.
-     */
     private void irAActividadPrincipal() {
-        Intent intent = new Intent(this, ActividadPrincipal.class);
-        startActivity(intent);
-        finish(); // Cerrar el login para que no aparezca en el BackStack
+        startActivity(new Intent(this, ActividadPrincipal.class));
+        finish();
     }
 
-    /**
-     * Muestra u oculta el indicador de carga.
-     * Mientras carga: deshabilita el botón y oculta el teclado.
-     *
-     * @param cargando true para mostrar el loader, false para ocultarlo
-     */
     private void mostrarCargando(boolean cargando) {
         enlace.contenedorCargando.setVisibility(
                 cargando ? View.VISIBLE : View.GONE);
@@ -185,10 +151,6 @@ public class ActividadLogin extends AppCompatActivity {
         enlace.campoContrasena.setEnabled(!cargando);
     }
 
-    /**
-     * Muestra un Snackbar con el mensaje de error.
-     * Snackbar es el componente M3 para mensajes temporales.
-     */
     private void mostrarError(String mensaje) {
         Snackbar.make(enlace.getRoot(), mensaje, Snackbar.LENGTH_LONG)
                 .setBackgroundTint(getColor(R.color.estado_cancelado_fondo))
@@ -199,6 +161,6 @@ public class ActividadLogin extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        enlace = null; // Evitar memory leaks
+        enlace = null;
     }
 }

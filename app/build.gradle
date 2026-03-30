@@ -23,8 +23,8 @@ android {
         // ── Claves de Supabase ────────────────────────────────
         // Reemplaza con tus valores reales:
         // supabase.com → tu proyecto → Settings → API
-        buildConfigField "String", "SUPABASE_URL",      '"https://TU_PROYECTO.supabase.co"'
-        buildConfigField "String", "SUPABASE_ANON_KEY", '"TU_ANON_KEY_AQUI"'
+        buildConfigField "String", "SUPABASE_URL",      '"https://cgjzbwqoeyqtvnfspybg.supabase.co"'
+        buildConfigField "String", "SUPABASE_ANON_KEY", '"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNnanpid3FvZXlxdHZuZnNweWJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NDQxMTQsImV4cCI6MjA5MDQyMDExNH0.U2ZL7VXng-w6xH6UXbca-mgmQlZl6V5JFX5MFemIk3s"'
     }
 
     buildFeatures {
