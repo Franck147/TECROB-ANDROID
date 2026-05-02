@@ -2,28 +2,29 @@ package com.example.tecrobsys.actividades;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import androidx.appcompat.app.AppCompatActivity;
-import com.google.android.material.snackbar.Snackbar;
+import androidx.lifecycle.ViewModelProvider;
+import com.example.tecrobsys.utils.MensajeUtils;
 import com.example.tecrobsys.databinding.ActivityLoginBinding;
-import com.example.tecrobsys.red.SupabaseServicio;
-import com.example.tecrobsys.red.SupabaseCliente;
-import com.example.tecrobsys.utils.SesionManager;
+import com.example.tecrobsys.viewmodels.LoginViewModel;
 import com.example.tecrobsys.R;
-import java.util.HashMap;
-import java.util.Map;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
+/**
+ * ActividadLogin — Primera pantalla: login con Supabase Auth.
+ *
+ * Flujo (manejado por LoginViewModel):
+ *   1. Usuario ingresa email + contraseña
+ *   2. ViewModel autentica con Supabase Auth → token JWT
+ *   3. ViewModel obtiene perfil del técnico (id real, nombre, rol)
+ *   4. SesionManager guarda todo en EncryptedSharedPreferences
+ *   5. Activity observa perfilTecnico → navega a ActividadPrincipal
+ */
 public class ActividadLogin extends AppCompatActivity {
 
-    private static final String TAG = "TECROB_LOGIN";
-
     private ActivityLoginBinding enlace;
-    private SesionManager sesionManager;
+    private LoginViewModel viewModel;
 
     @Override
     protected void onCreate(Bundle estadoGuardado) {
@@ -31,16 +32,19 @@ public class ActividadLogin extends AppCompatActivity {
         enlace = ActivityLoginBinding.inflate(getLayoutInflater());
         setContentView(enlace.getRoot());
 
-        sesionManager = SesionManager.obtenerInstancia(this);
+        viewModel = new ViewModelProvider(this).get(LoginViewModel.class);
 
-        if (sesionManager.estaAutenticado()) {
-            Log.d(TAG, "Sesión activa encontrada, saltando al dashboard");
+        // Si ya hay sesión activa, saltar directamente al dashboard
+        com.example.tecrobsys.utils.SesionManager sesion =
+                com.example.tecrobsys.utils.SesionManager.obtenerInstancia(this);
+        if (sesion.estaAutenticado()) {
             irAActividadPrincipal();
             return;
         }
 
         configurarCampos();
         configurarBotonIngresar();
+        observarViewModel();
     }
 
     private void configurarCampos() {
@@ -57,8 +61,24 @@ public class ActividadLogin extends AppCompatActivity {
         enlace.botonIngresar.setOnClickListener(v -> intentarLogin());
     }
 
+    private void observarViewModel() {
+        viewModel.cargando.observe(this, c -> mostrarCargando(Boolean.TRUE.equals(c)));
+
+        viewModel.error.observe(this, err -> {
+            if (err != null && !err.isEmpty()) {
+                mostrarError(err);
+                viewModel.limpiarError();
+            }
+        });
+
+        // Cuando el perfil llega → navegar a la pantalla principal
+        viewModel.perfilTecnico.observe(this, perfil -> {
+            if (perfil != null) irAActividadPrincipal();
+        });
+    }
+
     private void intentarLogin() {
-        String email = enlace.campoEmail.getText().toString().trim();
+        String email     = enlace.campoEmail.getText().toString().trim();
         String contrasena = enlace.campoContrasena.getText().toString().trim();
 
         if (email.isEmpty()) {
@@ -75,67 +95,7 @@ public class ActividadLogin extends AppCompatActivity {
             enlace.layoutContrasena.setError(null);
         }
 
-        mostrarCargando(true);
-        Log.d(TAG, "Intentando login con email: " + email);
-
-        Map<String, String> credenciales = new HashMap<>();
-        credenciales.put("email", email);
-        credenciales.put("password", contrasena);
-
-        SupabaseCliente.obtenerServicioAuth()
-                .iniciarSesion(credenciales)
-                .enqueue(new Callback<SupabaseServicio.RespuestaAuth>() {
-
-                    @Override
-                    public void onResponse(
-                            Call<SupabaseServicio.RespuestaAuth> llamada,
-                            Response<SupabaseServicio.RespuestaAuth> respuesta) {
-
-                        mostrarCargando(false);
-
-                        Log.d(TAG, "Respuesta recibida. Código HTTP: "
-                                + respuesta.code());
-
-                        if (respuesta.isSuccessful() && respuesta.body() != null) {
-                            Log.d(TAG, "Login exitoso. Token recibido.");
-                            SupabaseServicio.RespuestaAuth auth = respuesta.body();
-                            sesionManager.guardarSesion(
-                                    auth.tokenAcceso,
-                                    1,
-                                    1,
-                                    "Nelson",
-                                    email
-                            );
-                            irAActividadPrincipal();
-                        } else {
-                            // Loguear el cuerpo del error de Supabase
-                            try {
-                                String errorBody = respuesta.errorBody() != null
-                                        ? respuesta.errorBody().string()
-                                        : "sin cuerpo de error";
-                                Log.e(TAG, "Error HTTP " + respuesta.code()
-                                        + " — " + errorBody);
-                            } catch (Exception e) {
-                                Log.e(TAG, "No se pudo leer el error: "
-                                        + e.getMessage());
-                            }
-                            mostrarError(getString(R.string.error_credenciales));
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(
-                            Call<SupabaseServicio.RespuestaAuth> llamada,
-                            Throwable error) {
-
-                        mostrarCargando(false);
-                        // Este log nos dirá exactamente qué falló
-                        Log.e(TAG, "onFailure — Error de red: "
-                                + error.getClass().getSimpleName()
-                                + " — " + error.getMessage(), error);
-                        mostrarError(getString(R.string.error_sin_internet));
-                    }
-                });
+        viewModel.iniciarSesion(email, contrasena);
     }
 
     private void irAActividadPrincipal() {
@@ -144,18 +104,14 @@ public class ActividadLogin extends AppCompatActivity {
     }
 
     private void mostrarCargando(boolean cargando) {
-        enlace.contenedorCargando.setVisibility(
-                cargando ? View.VISIBLE : View.GONE);
+        enlace.contenedorCargando.setVisibility(cargando ? View.VISIBLE : View.GONE);
         enlace.botonIngresar.setEnabled(!cargando);
         enlace.campoEmail.setEnabled(!cargando);
         enlace.campoContrasena.setEnabled(!cargando);
     }
 
     private void mostrarError(String mensaje) {
-        Snackbar.make(enlace.getRoot(), mensaje, Snackbar.LENGTH_LONG)
-                .setBackgroundTint(getColor(R.color.estado_cancelado_fondo))
-                .setTextColor(getColor(R.color.estado_cancelado_texto))
-                .show();
+        MensajeUtils.mostrar(this, mensaje);
     }
 
     @Override

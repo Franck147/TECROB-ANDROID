@@ -4,16 +4,16 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.snackbar.Snackbar;
+import com.example.tecrobsys.utils.MensajeUtils;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import android.widget.ArrayAdapter;
@@ -23,28 +23,20 @@ import com.example.tecrobsys.R;
 import com.example.tecrobsys.adaptadores.AdaptadorServicio;
 import com.example.tecrobsys.databinding.FragmentoCatalogoBinding;
 import com.example.tecrobsys.modelos.ServicioCatalogo;
-import com.example.tecrobsys.red.SupabaseCliente;
 import com.example.tecrobsys.utils.SesionManager;
+import com.example.tecrobsys.viewmodels.CatalogoViewModel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 public class FragmentoCatalogo extends Fragment {
 
-    private static final String TAG = "TECROB_CAT";
-
     private FragmentoCatalogoBinding enlace;
     private AdaptadorServicio adaptador;
+    private CatalogoViewModel viewModel;
 
-    private final List<ServicioCatalogo> todosLosServicios = new ArrayList<>();
-    private final List<ServicioCatalogo> serviciosFiltrados = new ArrayList<>();
-
-    private String categoriaActiva = null;
-    private int empresaId;
+    private final List<ServicioCatalogo> serviciosMostrados = new ArrayList<>();
 
     private static final String[] CATEGORIAS_VALOR = {
             "mantenimiento", "reparacion", "software",
@@ -68,21 +60,26 @@ public class FragmentoCatalogo extends Fragment {
     public void onViewCreated(@NonNull View vista,
                               @Nullable Bundle estadoGuardado) {
         super.onViewCreated(vista, estadoGuardado);
-        empresaId = SesionManager.obtenerInstancia(requireContext()).obtenerEmpresaId();
+
+        viewModel = new ViewModelProvider(this).get(CatalogoViewModel.class);
+        int empresaId = SesionManager.obtenerInstancia(requireContext()).obtenerEmpresaId();
+
         configurarRecycler();
         configurarChips();
         configurarBusqueda();
         configurarBotones();
+        observarViewModel();
+
         enlace.swipeRefresh.setColorSchemeResources(R.color.rojo_primario);
-        enlace.swipeRefresh.setOnRefreshListener(this::cargarServicios);
-        cargarServicios();
+        enlace.swipeRefresh.setOnRefreshListener(() -> viewModel.cargarServicios(empresaId));
+
+        viewModel.cargarServicios(empresaId);
     }
 
     private void configurarRecycler() {
-        adaptador = new AdaptadorServicio(serviciosFiltrados,
-                servicio -> Snackbar.make(enlace.getRoot(),
-                        servicio.getNombre() + " — " + servicio.getPrecioFormateado(),
-                        Snackbar.LENGTH_SHORT).show(),
+        adaptador = new AdaptadorServicio(serviciosMostrados,
+                servicio -> MensajeUtils.mostrar(requireContext(),
+                        servicio.getNombre() + "\n" + servicio.getPrecioFormateado()),
                 this::mostrarMenuEdicion);
         enlace.recyclerServicios.setLayoutManager(new LinearLayoutManager(requireContext()));
         enlace.recyclerServicios.setAdapter(adaptador);
@@ -93,39 +90,58 @@ public class FragmentoCatalogo extends Fragment {
     }
 
     private void configurarChips() {
-        enlace.chipTodos.setOnClickListener(v -> { categoriaActiva = null; aplicarFiltros(); });
-        enlace.chipMantenimiento.setOnClickListener(v -> { categoriaActiva = "mantenimiento"; aplicarFiltros(); });
-        enlace.chipSoftware.setOnClickListener(v -> { categoriaActiva = "software"; aplicarFiltros(); });
-        enlace.chipRepuesto.setOnClickListener(v -> { categoriaActiva = "repuesto"; aplicarFiltros(); });
-        enlace.chipDiagnostico.setOnClickListener(v -> { categoriaActiva = "diagnostico"; aplicarFiltros(); });
+        enlace.chipTodos.setOnClickListener(v -> viewModel.setCategoria(null));
+        enlace.chipMantenimiento.setOnClickListener(v -> viewModel.setCategoria("mantenimiento"));
+        enlace.chipSoftware.setOnClickListener(v -> viewModel.setCategoria("software"));
+        enlace.chipRepuesto.setOnClickListener(v -> viewModel.setCategoria("repuesto"));
+        enlace.chipDiagnostico.setOnClickListener(v -> viewModel.setCategoria("diagnostico"));
     }
 
     private void configurarBusqueda() {
         enlace.campoBusqueda.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int i, int c, int a) {}
             @Override public void afterTextChanged(Editable e) {}
-            @Override public void onTextChanged(CharSequence t, int i, int a, int c) { aplicarFiltros(); }
+            @Override public void onTextChanged(CharSequence t, int i, int a, int c) {
+                viewModel.setBusqueda(t.toString());
+            }
         });
     }
 
-    private void aplicarFiltros() {
-        String texto = enlace.campoBusqueda.getText().toString().toLowerCase().trim();
-        serviciosFiltrados.clear();
-        for (ServicioCatalogo s : todosLosServicios) {
-            boolean pasaCategoria = categoriaActiva == null || categoriaActiva.equals(s.getCategoria());
-            boolean pasaBusqueda = texto.isEmpty() || (s.getNombre() != null && s.getNombre().toLowerCase().contains(texto));
-            if (pasaCategoria && pasaBusqueda) serviciosFiltrados.add(s);
-        }
-        adaptador.notifyDataSetChanged();
-        enlace.textoSinResultados.setVisibility(serviciosFiltrados.isEmpty() ? View.VISIBLE : View.GONE);
+    private void observarViewModel() {
+        viewModel.serviciosFiltrados.observe(getViewLifecycleOwner(), servicios -> {
+            serviciosMostrados.clear();
+            serviciosMostrados.addAll(servicios);
+            adaptador.notifyDataSetChanged();
+            enlace.textoSinResultados.setVisibility(
+                    servicios.isEmpty() ? View.VISIBLE : View.GONE);
+        });
+
+        viewModel.cargando.observe(getViewLifecycleOwner(),
+                c -> enlace.swipeRefresh.setRefreshing(Boolean.TRUE.equals(c)));
+
+        viewModel.mensajeExito.observe(getViewLifecycleOwner(), msg -> {
+            if (msg != null && !msg.isEmpty()) {
+                MensajeUtils.mostrar(requireContext(), msg);
+                viewModel.mensajeExito.setValue(null);
+            }
+        });
+
+        viewModel.error.observe(getViewLifecycleOwner(), err -> {
+            if (err != null && !err.isEmpty()) {
+                enlace.textoSinResultados.setVisibility(View.VISIBLE);
+                enlace.textoSinResultados.setText(err);
+                viewModel.error.setValue(null);
+            }
+        });
     }
 
     // ════════════════════════════════════════════════════════
-    //  CRUD — Diálogos
+    //  Diálogos CRUD
     // ════════════════════════════════════════════════════════
 
     public void mostrarDialogoServicio(@Nullable ServicioCatalogo servicio) {
         boolean esEdicion = servicio != null;
+        int empresaId = SesionManager.obtenerInstancia(requireContext()).obtenerEmpresaId();
 
         android.content.Context ctxClaro = new android.view.ContextThemeWrapper(
                 requireContext(),
@@ -153,7 +169,8 @@ public class FragmentoCatalogo extends Fragment {
         layoutPrecio.setHint("Precio base (S/) *");
         TextInputEditText campoPrecio = new TextInputEditText(ctxClaro);
         campoPrecio.setTextColor(Color.BLACK);
-        campoPrecio.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        campoPrecio.setInputType(android.text.InputType.TYPE_CLASS_NUMBER
+                | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
         layoutPrecio.addView(campoPrecio);
         layoutPrecio.setLayoutParams(params);
         contenedor.addView(layoutPrecio);
@@ -195,26 +212,42 @@ public class FragmentoCatalogo extends Fragment {
                 .setTitle(esEdicion ? "Editar servicio" : "Nuevo servicio")
                 .setView(contenedor)
                 .setPositiveButton(esEdicion ? "Guardar cambios" : "Agregar", (d, w) -> {
-                    String nombre = campoNombre.getText().toString().trim();
-                    String precioStr = campoPrecio.getText().toString().trim();
-                    String categoriaTexto = campoCategoria.getText().toString().trim();
+                    String nombre      = campoNombre.getText().toString().trim();
+                    String precioStr   = campoPrecio.getText().toString().trim();
+                    String catTexto    = campoCategoria.getText().toString().trim();
                     String descripcion = campoDesc.getText().toString().trim();
 
-                    if (nombre.isEmpty() || precioStr.isEmpty() || categoriaTexto.isEmpty()) {
-                        Snackbar.make(enlace.getRoot(), "Completa los campos obligatorios", Snackbar.LENGTH_SHORT).show();
+                    if (nombre.isEmpty() || precioStr.isEmpty() || catTexto.isEmpty()) {
+                        MensajeUtils.mostrar(requireContext(),
+                                "Completa los campos obligatorios");
                         return;
                     }
 
-                    String categoriaValor = "otro";
+                    String catValor = "otro";
                     for (int i = 0; i < CATEGORIAS_ETIQUETA.length; i++) {
-                        if (CATEGORIAS_ETIQUETA[i].equals(categoriaTexto)) { categoriaValor = CATEGORIAS_VALOR[i]; break; }
+                        if (CATEGORIAS_ETIQUETA[i].equals(catTexto)) {
+                            catValor = CATEGORIAS_VALOR[i];
+                            break;
+                        }
                     }
 
                     double precio;
-                    try { precio = Double.parseDouble(precioStr); } catch (NumberFormatException e) { precio = 0.0; }
+                    try { precio = Double.parseDouble(precioStr); }
+                    catch (NumberFormatException e) { precio = 0.0; }
 
-                    if (esEdicion) editarServicio(servicio.getId(), nombre, precio, categoriaValor, descripcion);
-                    else agregarServicio(nombre, precio, categoriaValor, descripcion);
+                    Map<String, Object> datos = new HashMap<>();
+                    datos.put("nombre",      nombre);
+                    datos.put("precio_base", precio);
+                    datos.put("categoria",   catValor);
+                    datos.put("descripcion", descripcion);
+
+                    if (esEdicion) {
+                        viewModel.actualizarServicio(servicio.getId(), datos);
+                    } else {
+                        datos.put("empresa_id", empresaId);
+                        datos.put("activo",     true);
+                        viewModel.agregarServicio(datos);
+                    }
                 })
                 .setNegativeButton("Cancelar", null)
                 .show();
@@ -232,110 +265,11 @@ public class FragmentoCatalogo extends Fragment {
     private void confirmarEliminacion(ServicioCatalogo servicio) {
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Eliminar servicio")
-                .setMessage("¿Eliminar \"" + servicio.getNombre() + "\"? Esta acción no se puede deshacer.")
-                .setPositiveButton("Eliminar", (d, w) -> eliminarServicio(servicio.getId()))
+                .setMessage("¿Eliminar \"" + servicio.getNombre()
+                        + "\"? Esta acción no se puede deshacer.")
+                .setPositiveButton("Eliminar",
+                        (d, w) -> viewModel.eliminarServicio(servicio.getId()))
                 .setNegativeButton("Cancelar", null).show();
-    }
-
-    // ════════════════════════════════════════════════════════
-    //  LLAMADAS A SUPABASE
-    // ════════════════════════════════════════════════════════
-
-    private void cargarServicios() {
-        enlace.swipeRefresh.setRefreshing(true);
-        Log.d(TAG, "Cargando servicios empresa_id=" + empresaId);
-        SupabaseCliente.obtenerServicio()
-                .listarServicios("eq." + empresaId, "eq.true", "nombre.asc")
-                .enqueue(new Callback<List<ServicioCatalogo>>() {
-                    @Override
-                    public void onResponse(@NonNull Call<List<ServicioCatalogo>> c, @NonNull Response<List<ServicioCatalogo>> r) {
-                        if (enlace == null) return;
-                        enlace.swipeRefresh.setRefreshing(false);
-                        if (r.isSuccessful() && r.body() != null) {
-                            todosLosServicios.clear();
-                            todosLosServicios.addAll(r.body());
-                            aplicarFiltros();
-                        }
-                    }
-                    @Override
-                    public void onFailure(@NonNull Call<List<ServicioCatalogo>> c, @NonNull Throwable e) {
-                        if (enlace == null) return;
-                        enlace.swipeRefresh.setRefreshing(false);
-                        enlace.textoSinResultados.setVisibility(View.VISIBLE);
-                        enlace.textoSinResultados.setText(getString(R.string.msg_error_cargar));
-                    }
-                });
-    }
-
-    private void agregarServicio(String nombre, double precio, String categoria, String descripcion) {
-        Map<String, Object> datos = new HashMap<>();
-        datos.put("empresa_id", empresaId);
-        datos.put("nombre", nombre);
-        datos.put("precio_base", precio);
-        datos.put("categoria", categoria);
-        datos.put("descripcion", descripcion);
-        datos.put("activo", true);
-        SupabaseCliente.obtenerServicio().agregarServicio(datos).enqueue(new Callback<ServicioCatalogo>() {
-            @Override
-            public void onResponse(@NonNull Call<ServicioCatalogo> c, @NonNull Response<ServicioCatalogo> r) {
-                if (enlace == null) return;
-                // 201 = creado, 200 = ok — ambos son éxito
-                if (r.code() == 201 || r.isSuccessful()) {
-                    Snackbar.make(enlace.getRoot(), "✅ Servicio agregado", Snackbar.LENGTH_SHORT).show();
-                    cargarServicios();
-                } else {
-                    Snackbar.make(enlace.getRoot(), getString(R.string.error_servidor), Snackbar.LENGTH_SHORT).show();
-                }
-            }
-            @Override
-            public void onFailure(@NonNull Call<ServicioCatalogo> c, @NonNull Throwable e) {
-                if (enlace == null) return;
-                Snackbar.make(enlace.getRoot(), getString(R.string.error_sin_internet), Snackbar.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void editarServicio(int id, String nombre, double precio, String categoria, String descripcion) {
-        Map<String, Object> datos = new HashMap<>();
-        datos.put("nombre", nombre);
-        datos.put("precio_base", precio);
-        datos.put("categoria", categoria);
-        datos.put("descripcion", descripcion);
-        SupabaseCliente.obtenerServicio().actualizarServicio("eq." + id, datos).enqueue(new Callback<ServicioCatalogo>() {
-            @Override
-            public void onResponse(@NonNull Call<ServicioCatalogo> c, @NonNull Response<ServicioCatalogo> r) {
-                if (enlace == null) return;
-                // Supabase PATCH devuelve 200, 201 o 204 según config
-                if (r.code() == 200 || r.code() == 201 || r.code() == 204 || r.isSuccessful()) {
-                    Snackbar.make(enlace.getRoot(), "✅ Servicio actualizado", Snackbar.LENGTH_SHORT).show();
-                    cargarServicios();
-                }
-            }
-            @Override
-            public void onFailure(@NonNull Call<ServicioCatalogo> c, @NonNull Throwable e) {
-                if (enlace == null) return;
-                Snackbar.make(enlace.getRoot(), getString(R.string.error_sin_internet), Snackbar.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void eliminarServicio(int id) {
-        SupabaseCliente.obtenerServicio().eliminarServicio("eq." + id).enqueue(new Callback<Void>() {
-            @Override
-            public void onResponse(@NonNull Call<Void> c, @NonNull Response<Void> r) {
-                if (enlace == null) return;
-                // Supabase DELETE devuelve 200, 201 o 204
-                if (r.code() == 200 || r.code() == 201 || r.code() == 204 || r.isSuccessful()) {
-                    Snackbar.make(enlace.getRoot(), "🗑️ Servicio eliminado", Snackbar.LENGTH_SHORT).show();
-                    cargarServicios();
-                }
-            }
-            @Override
-            public void onFailure(@NonNull Call<Void> c, @NonNull Throwable e) {
-                if (enlace == null) return;
-                Snackbar.make(enlace.getRoot(), getString(R.string.error_sin_internet), Snackbar.LENGTH_SHORT).show();
-            }
-        });
     }
 
     @Override

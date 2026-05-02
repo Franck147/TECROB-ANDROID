@@ -3,7 +3,9 @@ package com.example.tecrobsys.red;
 import com.example.tecrobsys.modelos.Cliente;
 import com.example.tecrobsys.modelos.Equipo;
 import com.example.tecrobsys.modelos.Orden;
+import com.example.tecrobsys.modelos.Pago;
 import com.example.tecrobsys.modelos.ServicioCatalogo;
+import com.example.tecrobsys.modelos.Tecnico;
 import com.google.gson.annotations.SerializedName;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +54,7 @@ public interface SupabaseServicio {
     );
 
     @POST("orden")
+    @Headers("Accept: application/vnd.pgrst.object+json")
     Call<Orden> crearOrden(@Body Map<String, Object> datosOrden);
 
     @PATCH("orden")
@@ -77,6 +80,7 @@ public interface SupabaseServicio {
     );
 
     @POST("cliente")
+    @Headers("Accept: application/vnd.pgrst.object+json")
     Call<Cliente> crearCliente(@Body Map<String, Object> datosCliente);
 
     // ════════════════════════════════════════════════════════
@@ -84,7 +88,19 @@ public interface SupabaseServicio {
     // ════════════════════════════════════════════════════════
 
     @POST("equipo")
+    @Headers("Accept: application/vnd.pgrst.object+json")
     Call<Equipo> crearEquipo(@Body Map<String, Object> datosEquipo);
+
+    @POST("orden_servicio")
+    @Headers("Prefer: return=minimal")
+    Call<Void> crearOrdenServicios(@Body List<Map<String, Object>> datos);
+
+    // ════════════════════════════════════════════════════════
+    //  PAGOS
+    // ════════════════════════════════════════════════════════
+
+    @POST("pago")
+    Call<Pago> crearPago(@Body Map<String, Object> datosPago);
 
     // ════════════════════════════════════════════════════════
     //  CATÁLOGO DE SERVICIOS
@@ -109,6 +125,7 @@ public interface SupabaseServicio {
 
     /** Agregar nuevo servicio al catálogo */
     @POST("servicio_catalogo")
+    @Headers("Accept: application/vnd.pgrst.object+json")
     Call<ServicioCatalogo> agregarServicio(
             @Body Map<String, Object> datos);
 
@@ -122,6 +139,24 @@ public interface SupabaseServicio {
     @DELETE("servicio_catalogo")
     Call<Void> eliminarServicio(
             @Query("id") String idFiltro);
+
+    // ════════════════════════════════════════════════════════
+    //  TÉCNICOS / PERFILES DE USUARIO
+    // ════════════════════════════════════════════════════════
+
+    /**
+     * Obtiene el perfil del técnico por su auth_user_id (UUID de Supabase Auth).
+     * Usar con el prefijo "eq." → "eq.uuid-aqui"
+     * Se llama después del login para obtener id real, nombre y rol.
+     */
+    @GET("tecnico")
+    Call<List<Tecnico>> obtenerPerfilPorAuthId(
+            @Query("auth_user_id") String authIdFiltro);
+
+    /** @deprecated Usar obtenerPerfilPorAuthId — más confiable que buscar por email */
+    @GET("tecnico")
+    Call<List<Tecnico>> obtenerPerfilPorEmail(
+            @Query("email") String emailFiltro);
 
     // ════════════════════════════════════════════════════════
     //  RESPUESTA DE AUTENTICACIÓN

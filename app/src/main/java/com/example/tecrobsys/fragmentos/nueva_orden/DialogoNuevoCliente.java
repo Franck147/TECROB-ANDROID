@@ -1,44 +1,53 @@
 package com.example.tecrobsys.fragmentos.nueva_orden;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
-import com.google.android.material.snackbar.Snackbar;
+import com.example.tecrobsys.utils.MensajeUtils;
 import com.example.tecrobsys.R;
 import com.example.tecrobsys.databinding.DialogoNuevoClienteBinding;
 import com.example.tecrobsys.modelos.Cliente;
-import com.example.tecrobsys.red.SupabaseCliente;
+import com.example.tecrobsys.viewmodels.NuevoClienteViewModel;
 import java.util.HashMap;
 import java.util.Map;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
+/**
+ * DialogoNuevoCliente — BottomSheet para registrar un nuevo cliente.
+ *
+ * Patrón de comunicación con el fragmento padre:
+ *   FragmentoNuevaOrden implements OnClienteCreadoListener
+ *   → este diálogo llama getParentFragment() para notificar al padre
+ *
+ * El empresaId se pasa via setArguments() (patrón correcto para Fragments).
+ *
+ * Uso:
+ *   DialogoNuevoCliente d = DialogoNuevoCliente.nuevaInstancia(empresaId);
+ *   d.show(getParentFragmentManager(), "nuevo_cliente");
+ */
 public class DialogoNuevoCliente extends BottomSheetDialogFragment {
 
-    private static final String TAG = "TECROB_CLIENTE";
+    private static final String ARG_EMPRESA_ID = "empresa_id";
 
+    /** El fragmento padre debe implementar esta interfaz para recibir el cliente creado. */
     public interface OnClienteCreadoListener {
         void alCrearCliente(Cliente cliente);
     }
 
     private DialogoNuevoClienteBinding enlace;
-    private final int empresaId;
-    private final OnClienteCreadoListener callback;
+    private NuevoClienteViewModel viewModel;
 
-    // Datos del formulario guardados antes del request
-    private String nombreIngresado;
-    private String apellidoIngresado;
-    private String telefonoIngresado;
-
-    public DialogoNuevoCliente(int empresaId, OnClienteCreadoListener callback) {
-        this.empresaId = empresaId;
-        this.callback  = callback;
+    /** Método fábrica — forma correcta de instanciar este fragmento. */
+    public static DialogoNuevoCliente nuevaInstancia(int empresaId) {
+        DialogoNuevoCliente dialogo = new DialogoNuevoCliente();
+        Bundle args = new Bundle();
+        args.putInt(ARG_EMPRESA_ID, empresaId);
+        dialogo.setArguments(args);
+        return dialogo;
     }
 
     @Nullable
@@ -54,112 +63,78 @@ public class DialogoNuevoCliente extends BottomSheetDialogFragment {
     public void onViewCreated(@NonNull View vista,
                               @Nullable Bundle estadoGuardado) {
         super.onViewCreated(vista, estadoGuardado);
+
+        viewModel = new ViewModelProvider(this).get(NuevoClienteViewModel.class);
+
+        observarViewModel();
+        configurarBotones();
+    }
+
+    private void observarViewModel() {
+        viewModel.guardando.observe(getViewLifecycleOwner(), g -> {
+            boolean guardando = Boolean.TRUE.equals(g);
+            enlace.progressGuardandoCliente.setVisibility(
+                    guardando ? View.VISIBLE : View.GONE);
+            enlace.botonGuardarCliente.setEnabled(!guardando);
+        });
+
+        viewModel.clienteCreado.observe(getViewLifecycleOwner(), cliente -> {
+            if (cliente != null) {
+                // Notificar al fragmento padre vía interfaz
+                if (getParentFragment() instanceof OnClienteCreadoListener) {
+                    ((OnClienteCreadoListener) getParentFragment()).alCrearCliente(cliente);
+                }
+                dismiss();
+                viewModel.clienteCreado.setValue(null);
+            }
+        });
+
+        viewModel.error.observe(getViewLifecycleOwner(), err -> {
+            if (err != null && !err.isEmpty()) {
+                MensajeUtils.mostrar(requireContext(), err);
+                viewModel.error.setValue(null);
+            }
+        });
+    }
+
+    private void configurarBotones() {
         enlace.botonGuardarCliente.setOnClickListener(v -> {
-            if (validar()) guardarCliente();
+            if (validar()) guardar();
         });
         enlace.botonCancelarCliente.setOnClickListener(v -> dismiss());
     }
 
     private boolean validar() {
         boolean valido = true;
-
         if (enlace.campoNombreCliente.getText().toString().trim().isEmpty()) {
             enlace.campoNombreCliente.setError(getString(R.string.error_nombre_vacio));
             valido = false;
         } else {
             enlace.campoNombreCliente.setError(null);
         }
-
         if (enlace.campoTelefonoCliente.getText().toString().trim().isEmpty()) {
             enlace.layoutTelefonoCliente.setError(getString(R.string.error_telefono_vacio));
             valido = false;
         } else {
             enlace.layoutTelefonoCliente.setError(null);
         }
-
         return valido;
     }
 
-    private void guardarCliente() {
-        enlace.botonGuardarCliente.setEnabled(false);
-        enlace.progressGuardandoCliente.setVisibility(View.VISIBLE);
-
-        // Guardar valores antes del request para usarlos si body() es null
-        nombreIngresado   = enlace.campoNombreCliente.getText().toString().trim();
-        apellidoIngresado = enlace.campoApellidoCliente.getText().toString().trim();
-        telefonoIngresado = enlace.campoTelefonoCliente.getText().toString().trim();
+    private void guardar() {
+        int empresaId = getArguments() != null
+                ? getArguments().getInt(ARG_EMPRESA_ID, 1) : 1;
 
         Map<String, Object> datos = new HashMap<>();
         datos.put("empresa_id", empresaId);
-        datos.put("nombre",    nombreIngresado);
-        datos.put("apellido",  apellidoIngresado);
-        datos.put("telefono",  telefonoIngresado);
+        datos.put("nombre",    enlace.campoNombreCliente.getText().toString().trim());
+        datos.put("apellido",  enlace.campoApellidoCliente.getText().toString().trim());
+        datos.put("telefono",  enlace.campoTelefonoCliente.getText().toString().trim());
         datos.put("dni",       enlace.campoDniCliente.getText().toString().trim());
         datos.put("email",     enlace.campoEmailCliente.getText().toString().trim());
         datos.put("direccion", enlace.campoDireccionCliente.getText().toString().trim());
 
-        Log.d(TAG, "Guardando cliente: " + nombreIngresado);
-
-        SupabaseCliente.obtenerServicio()
-                .crearCliente(datos)
-                .enqueue(new Callback<Cliente>() {
-                    @Override
-                    public void onResponse(@NonNull Call<Cliente> c,
-                                           @NonNull Response<Cliente> r) {
-                        if (enlace == null) return;
-                        enlace.progressGuardandoCliente.setVisibility(View.GONE);
-                        enlace.botonGuardarCliente.setEnabled(true);
-
-                        Log.d(TAG, "Respuesta HTTP: " + r.code());
-
-                        // Supabase devuelve 201 al insertar exitosamente
-                        // body() puede ser null aunque el insert fue exitoso
-                        if (r.code() == 201 || r.isSuccessful()) {
-                            Cliente clienteCreado;
-
-                            if (r.body() != null) {
-                                clienteCreado = r.body();
-                                Log.d(TAG, "Cliente creado con ID: " + clienteCreado.getId());
-                            } else {
-                                // Insert exitoso pero sin objeto de retorno
-                                // Construimos cliente temporal con datos del formulario
-                                Log.d(TAG, "Insert OK pero body null — usando datos del form");
-                                clienteCreado = new Cliente();
-                                clienteCreado.setNombre(nombreIngresado);
-                                clienteCreado.setApellido(apellidoIngresado);
-                                clienteCreado.setTelefono(telefonoIngresado);
-                            }
-
-                            callback.alCrearCliente(clienteCreado);
-                            dismiss();
-
-                        } else {
-                            try {
-                                String errorBody = r.errorBody() != null
-                                        ? r.errorBody().string() : "sin error";
-                                Log.e(TAG, "Error HTTP " + r.code() + ": " + errorBody);
-                            } catch (Exception e) {
-                                Log.e(TAG, "No se pudo leer error: " + e.getMessage());
-                            }
-                            Snackbar.make(enlace.getRoot(),
-                                    getString(R.string.error_servidor),
-                                    Snackbar.LENGTH_SHORT).show();
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull Call<Cliente> c,
-                                          @NonNull Throwable e) {
-                        if (enlace == null) return;
-                        enlace.progressGuardandoCliente.setVisibility(View.GONE);
-                        enlace.botonGuardarCliente.setEnabled(true);
-                        Log.e(TAG, "onFailure: " + e.getClass().getSimpleName()
-                                + " — " + e.getMessage(), e);
-                        Snackbar.make(enlace.getRoot(),
-                                getString(R.string.error_sin_internet),
-                                Snackbar.LENGTH_SHORT).show();
-                    }
-                });
+        viewModel.crearCliente(datos);
     }
 
     @Override

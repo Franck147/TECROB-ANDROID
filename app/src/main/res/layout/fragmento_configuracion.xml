@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    fragmento_configuracion.xml — Perfil del usuario + cierre de sesión
+    ─────────────────────────────────────────────────────────────────────
+    Disponible para todos los roles. Muestra los datos de la sesión
+    activa y permite cerrar sesión de forma segura.
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/fondo_principal"
+    android:paddingTop="36dp"
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp"
+    android:paddingBottom="24dp">
+
+    <!-- ── TÍTULO ───────────────────────────────────────────────── -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/titulo_config"
+        android:textColor="@color/texto_principal"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="32dp"/>
+
+    <!-- ── TARJETA DE PERFIL ─────────────────────────────────────── -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@style/EstiloCard">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:gravity="center_horizontal">
+
+            <!-- Avatar con la inicial del nombre -->
+            <TextView
+                android:id="@+id/text_avatar"
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:background="@drawable/fondo_avatar"
+                android:gravity="center"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:textColor="@color/rojo_primario"
+                android:text="?"
+                android:layout_marginBottom="16dp"/>
+
+            <!-- Nombre completo -->
+            <TextView
+                android:id="@+id/text_nombre"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="—"
+                android:textColor="@color/texto_principal"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_marginBottom="8dp"/>
+
+            <!-- Badge de rol -->
+            <TextView
+                android:id="@+id/text_rol"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/lbl_rol_tecnico"
+                android:textColor="@color/rojo_primario"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:background="@drawable/fondo_badge"
+                android:layout_marginBottom="8dp"/>
+
+            <!-- Email -->
+            <TextView
+                android:id="@+id/text_email"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="—"
+                android:textColor="@color/texto_secundario"
+                android:textSize="13sp"
+                android:gravity="center"/>
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- ── SEPARADOR ─────────────────────────────────────────────── -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:background="@color/fondo_borde"
+        android:layout_marginTop="28dp"
+        android:layout_marginBottom="28dp"/>
+
+    <!-- ── BOTÓN CERRAR SESIÓN ───────────────────────────────────── -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/boton_cerrar_sesion"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:text="@string/btn_cerrar_sesion"
+        android:textColor="@color/rojo_primario"
+        android:textSize="15sp"
+        style="@style/Widget.Material3.Button.OutlinedButton"
+        app:strokeColor="@color/rojo_primario"
+        app:strokeWidth="1dp"
+        app:iconGravity="textStart"
+        app:iconPadding="8dp"/>
+
+    <!-- ── FOOTER: VERSIÓN ──────────────────────────────────────── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="bottom|center_horizontal"
+        android:paddingBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/nombre_app"
+            android:textColor="@color/texto_muted"
+            android:textSize="12sp"
+            android:gravity="center"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/version_app"
+            android:textColor="@color/texto_muted"
+            android:textSize="11sp"
+            android:gravity="center"/>
+
+    </LinearLayout>
+
+</LinearLayout>

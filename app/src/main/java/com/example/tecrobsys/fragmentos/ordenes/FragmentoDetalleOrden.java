@@ -1,5 +1,6 @@
 package com.example.tecrobsys.fragmentos.ordenes;
 
+import androidx.appcompat.app.AlertDialog;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.net.Uri;
@@ -11,55 +12,34 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.snackbar.Snackbar;
+import com.example.tecrobsys.utils.MensajeUtils;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.example.tecrobsys.R;
 import com.example.tecrobsys.databinding.FragmentoDetalleOrdenBinding;
 import com.example.tecrobsys.modelos.Orden;
-import com.example.tecrobsys.red.SupabaseCliente;
+import com.example.tecrobsys.utils.GeneradorPDF;
 import com.example.tecrobsys.utils.UtilEstado;
 import com.example.tecrobsys.utils.UtilFecha;
-import java.util.HashMap;
-import java.util.Map;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import com.example.tecrobsys.viewmodels.DetalleOrdenViewModel;
 
-/**
- * FragmentoDetalleOrden — Pantalla de detalle de una orden.
- *
- * Funcionalidades:
- *   - Ver todos los datos de la orden (cliente, equipo, totales)
- *   - Cambiar el estado tocando el chip de estado
- *   - Llamar directamente al cliente
- *   - Abrir WhatsApp con mensaje predefinido
- *   - Enviar PDF por WhatsApp
- *   - Marcar como completada y enviar aviso automático
- *
- * Se crea con el método fábrica nuevaInstancia(ordenId).
- * Nunca usar el constructor con parámetros en Fragments.
- */
 public class FragmentoDetalleOrden extends Fragment {
 
-    // Clave del argumento para el ID de la orden
     private static final String ARG_ORDEN_ID = "orden_id";
 
     private FragmentoDetalleOrdenBinding enlace;
+    private DetalleOrdenViewModel viewModel;
     private int ordenId;
-    private Orden ordenActual;
 
-    /**
-     * Método fábrica — forma correcta de crear este fragmento.
-     * Los argumentos sobreviven a rotaciones de pantalla.
-     *
-     * Uso: FragmentoDetalleOrden.nuevaInstancia(41)
-     */
     public static FragmentoDetalleOrden nuevaInstancia(int ordenId) {
-        FragmentoDetalleOrden fragmento = new FragmentoDetalleOrden();
+        FragmentoDetalleOrden f = new FragmentoDetalleOrden();
         Bundle args = new Bundle();
         args.putInt(ARG_ORDEN_ID, ordenId);
-        fragmento.setArguments(args);
-        return fragmento;
+        f.setArguments(args);
+        return f;
     }
 
     @Override
@@ -84,100 +64,84 @@ public class FragmentoDetalleOrden extends Fragment {
                               @Nullable Bundle estadoGuardado) {
         super.onViewCreated(vista, estadoGuardado);
 
-        // Botón volver
+        viewModel = new ViewModelProvider(this).get(DetalleOrdenViewModel.class);
+
         enlace.botonVolver.setOnClickListener(v ->
                 requireActivity().getSupportFragmentManager().popBackStack());
 
-        cargarOrden();
+        observarViewModel();
+        viewModel.cargarOrden(ordenId);
     }
 
-    /**
-     * Carga la orden completa desde Supabase con un solo request.
-     * Incluye cliente, técnico y equipo via JOIN de Supabase.
-     */
-    private void cargarOrden() {
-        enlace.progressCargando.setVisibility(View.VISIBLE);
-        enlace.contenidoOrden.setVisibility(View.GONE);
+    private void observarViewModel() {
+        viewModel.cargando.observe(getViewLifecycleOwner(), c -> {
+            enlace.progressCargando.setVisibility(
+                    Boolean.TRUE.equals(c) ? View.VISIBLE : View.GONE);
+        });
 
-        String seleccion = "*,"
-                + "cliente:cliente_id(nombre,apellido,telefono,email,dni),"
-                + "tecnico:tecnico_id(nombre,apellido),"
-                + "equipo(*)";
+        viewModel.orden.observe(getViewLifecycleOwner(), orden -> {
+            if (orden != null) {
+                enlace.contenidoOrden.setVisibility(View.VISIBLE);
+                mostrarDatos(orden);
+                configurarAcciones(orden);
+            }
+        });
 
-        SupabaseCliente.obtenerServicio()
-                .obtenerOrdenPorId("eq." + ordenId, seleccion)
-                .enqueue(new Callback<Orden>() {
-                    @Override
-                    public void onResponse(@NonNull Call<Orden> c,
-                                           @NonNull Response<Orden> r) {
-                        if (enlace == null) return;
-                        enlace.progressCargando.setVisibility(View.GONE);
+        viewModel.estadoActualizado.observe(getViewLifecycleOwner(), ok -> {
+            if (Boolean.TRUE.equals(ok)) {
+                mostrarSnackbar(getString(R.string.msg_estado_actualizado));
+                viewModel.estadoActualizado.setValue(null);
+            }
+        });
 
-                        if (r.isSuccessful() && r.body() != null) {
-                            ordenActual = r.body();
-                            enlace.contenidoOrden.setVisibility(View.VISIBLE);
-                            mostrarDatos();
-                            configurarAcciones();
-                        }
-                    }
+        viewModel.pagoRegistrado.observe(getViewLifecycleOwner(), ok -> {
+            if (Boolean.TRUE.equals(ok)) {
+                mostrarSnackbar(getString(R.string.msg_pago_registrado));
+                // Refrescar los totales en pantalla
+                Orden ordenActual = viewModel.orden.getValue();
+                if (ordenActual != null) mostrarDatos(ordenActual);
+                viewModel.pagoRegistrado.setValue(null);
+            }
+        });
 
-                    @Override
-                    public void onFailure(@NonNull Call<Orden> c,
-                                          @NonNull Throwable e) {
-                        if (enlace == null) return;
-                        enlace.progressCargando.setVisibility(View.GONE);
-                        mostrarSnackbar(getString(R.string.error_sin_internet));
-                    }
-                });
+        viewModel.error.observe(getViewLifecycleOwner(), err -> {
+            if (err != null && !err.isEmpty()) {
+                mostrarSnackbar(err);
+                viewModel.error.setValue(null);
+            }
+        });
     }
 
-    /**
-     * Llena todas las vistas con los datos de la orden cargada.
-     */
-    private void mostrarDatos() {
-        // ── Encabezado ────────────────────────────────────────────
-        enlace.textNumeroOrden.setText("#" + ordenActual.getNumeroOrden());
+    private void mostrarDatos(Orden orden) {
+        enlace.textNumeroOrden.setText("#" + orden.getNumeroOrden());
         enlace.textFechaCreacion.setText(
                 getString(R.string.lbl_creada_el) + " "
-                        + UtilFecha.formatearFechaCorta(ordenActual.getCreadoEn()));
+                        + UtilFecha.formatearFechaCorta(orden.getCreadoEn()));
 
-        // ── Estado con color dinámico ─────────────────────────────
-        actualizarChipEstado(ordenActual.getEstado());
+        actualizarChipEstado(orden.getEstado());
 
-        // ── Cliente ───────────────────────────────────────────────
-        if (ordenActual.getCliente() != null) {
-            Orden.ClienteResumen cli = ordenActual.getCliente();
+        if (orden.getCliente() != null) {
+            Orden.ClienteResumen cli = orden.getCliente();
             enlace.textInicialesCliente.setText(cli.getIniciales());
             enlace.textNombreCliente.setText(cli.getNombreCompleto());
             enlace.textTelefonoCliente.setText(
                     cli.getTelefono() != null ? cli.getTelefono() : "—");
         }
 
-        // ── Equipo ────────────────────────────────────────────────
-        if (ordenActual.getEquipo() != null) {
-            com.example.tecrobsys.modelos.Equipo eq = ordenActual.getEquipo();
+        if (orden.getEquipo() != null) {
+            com.example.tecrobsys.modelos.Equipo eq = orden.getEquipo();
             enlace.textTipoEquipo.setText(eq.getTipoFormateado());
             enlace.textMarcaModelo.setText(eq.getNombreCompleto());
-            enlace.textSerie.setText(
-                    eq.getNumeroSerie() != null ? eq.getNumeroSerie() : "—");
-            enlace.textDesperfecto.setText(
-                    eq.getDesperfecto() != null ? eq.getDesperfecto() : "—");
+            enlace.textSerie.setText(eq.getNumeroSerie() != null ? eq.getNumeroSerie() : "—");
+            enlace.textDesperfecto.setText(eq.getDesperfecto() != null ? eq.getDesperfecto() : "—");
         }
 
-        // ── Totales ───────────────────────────────────────────────
-        enlace.textSubtotal.setText(
-                String.format("S/ %.2f", ordenActual.getSubtotal()));
-        enlace.textDescuento.setText(
-                String.format("S/ %.2f", ordenActual.getDescuento()));
-        enlace.textAdelanto.setText(
-                String.format("- S/ %.2f", ordenActual.getAdelanto()));
-        enlace.textTotalCobrar.setText(
-                String.format("S/ %.2f", ordenActual.getSaldoPendiente()));
+        enlace.textSubtotal.setText(String.format("S/ %.2f", orden.getSubtotal()));
+        enlace.textDescuento.setText(String.format("S/ %.2f", orden.getDescuento()));
+        enlace.textAdelanto.setText(String.format("- S/ %.2f", orden.getAdelanto()));
+        enlace.textTotalCobrar.setText(String.format("S/ %.2f", orden.getSaldoPendiente()));
     }
 
-    /**
-     * Actualiza el chip de estado con el color correcto.
-     */
     private void actualizarChipEstado(String estado) {
         enlace.chipEstado.setText(UtilEstado.obtenerTexto(estado));
         enlace.chipEstado.setChipBackgroundColor(
@@ -187,77 +151,70 @@ public class FragmentoDetalleOrden extends Fragment {
                 requireContext(), UtilEstado.obtenerColorTexto(estado)));
     }
 
-    /**
-     * Configura todos los botones de acción.
-     */
-    private void configurarAcciones() {
-        String telefono = ordenActual.getCliente() != null
-                ? ordenActual.getCliente().getTelefono() : "";
+    private void configurarAcciones(Orden orden) {
+        String telefono = orden.getCliente() != null
+                ? orden.getCliente().getTelefono() : "";
 
-        // ── Llamar al cliente ─────────────────────────────────────
-        enlace.botonLlamar.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_DIAL,
-                    Uri.parse("tel:" + telefono));
-            startActivity(intent);
-        });
+        // Llamar al cliente
+        enlace.botonLlamar.setOnClickListener(v ->
+                startActivity(new Intent(Intent.ACTION_DIAL,
+                        Uri.parse("tel:" + telefono))));
 
-        // ── Abrir WhatsApp ────────────────────────────────────────
-        enlace.botonWhatsapp.setOnClickListener(v ->
-                abrirWhatsApp(telefono, ""));
+        // Abrir WhatsApp
+        enlace.botonWhatsapp.setOnClickListener(v -> abrirWhatsApp(telefono, ""));
 
-        // ── Enviar PDF por WhatsApp ───────────────────────────────
+        // Generar y compartir PDF (en hilo secundario para no bloquear la UI)
         enlace.botonPdf.setOnClickListener(v -> {
-            String mensaje = String.format(
-                    getString(R.string.msg_wa_orden_recibida),
-                    ordenActual.getCliente() != null
-                            ? ordenActual.getCliente().getNombreCompleto() : "",
-                    ordenActual.getEquipo() != null
-                            ? ordenActual.getEquipo().getNombreCompleto() : "su equipo",
-                    ordenActual.getNumeroOrden());
-            abrirWhatsApp(telefono, mensaje);
+            Orden ordenActual = viewModel.orden.getValue();
+            if (ordenActual == null) return;
+            enlace.botonPdf.setEnabled(false);
+            new Thread(() -> {
+                Uri uri = GeneradorPDF.generarOrden(requireContext(), ordenActual);
+                requireActivity().runOnUiThread(() -> {
+                    enlace.botonPdf.setEnabled(true);
+                    if (uri != null) {
+                        Intent share = new Intent(Intent.ACTION_SEND);
+                        share.setType("application/pdf");
+                        share.putExtra(Intent.EXTRA_STREAM, uri);
+                        share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        startActivity(Intent.createChooser(share, "Compartir orden PDF"));
+                    } else {
+                        mostrarSnackbar("No se pudo generar el PDF");
+                    }
+                });
+            }).start();
         });
 
-        // ── Avisar que está listo ─────────────────────────────────
-        enlace.botonAvisarListo.setOnClickListener(v ->
-                mostrarDialogoCompletada());
+        // Avisar que está listo
+        enlace.botonAvisarListo.setOnClickListener(v -> mostrarDialogoCompletada(orden));
 
-        // ── Cambiar estado tocando el chip ────────────────────────
+        // Cambiar estado tocando el chip
         enlace.chipEstado.setOnClickListener(v -> mostrarSelectorEstado());
 
-        // ── Botón principal: marcar completada ────────────────────
-        enlace.botonMarcarCompletada.setOnClickListener(v ->
-                mostrarDialogoCompletada());
+        // Botón principal: marcar completada
+        enlace.botonMarcarCompletada.setOnClickListener(v -> mostrarDialogoCompletada(orden));
+
+        // Registrar pago
+        enlace.botonRegistrarPago.setOnClickListener(v -> mostrarDialogoPago());
     }
 
-    /**
-     * Abre WhatsApp con el número y mensaje indicados.
-     * Si WhatsApp no está instalado abre el navegador.
-     */
     private void abrirWhatsApp(String telefono, String mensaje) {
-        // Limpiar el número: quitar espacios, guiones, paréntesis
         String numero = telefono.replaceAll("[^\\d+]", "");
         try {
             String url = "https://api.whatsapp.com/send?phone=" + numero;
-            if (!mensaje.isEmpty()) {
-                url += "&text=" + Uri.encode(mensaje);
-            }
+            if (!mensaje.isEmpty()) url += "&text=" + Uri.encode(mensaje);
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
         } catch (Exception e) {
             mostrarSnackbar(getString(R.string.msg_whatsapp_no_disponible));
         }
     }
 
-    /**
-     * Muestra el diálogo de confirmación antes de marcar como completada.
-     * Incluye la vista previa del mensaje de WhatsApp.
-     */
-    private void mostrarDialogoCompletada() {
-        String nombre = ordenActual.getCliente() != null
-                ? ordenActual.getCliente().getNombreCompleto() : "cliente";
-        String equipo = ordenActual.getEquipo() != null
-                ? ordenActual.getEquipo().getNombreCompleto() : "su equipo";
-        String numero = ordenActual.getNumeroOrden();
-
+    private void mostrarDialogoCompletada(Orden orden) {
+        String nombre  = orden.getCliente() != null
+                ? orden.getCliente().getNombreCompleto() : "cliente";
+        String equipo  = orden.getEquipo()  != null
+                ? orden.getEquipo().getNombreCompleto() : "su equipo";
+        String numero  = orden.getNumeroOrden();
         String mensajeWa = String.format(
                 getString(R.string.msg_wa_orden_lista), nombre, equipo, numero);
 
@@ -265,63 +222,80 @@ public class FragmentoDetalleOrden extends Fragment {
                 .setTitle(getString(R.string.dialogo_marcar_lista_titulo))
                 .setMessage(mensajeWa)
                 .setPositiveButton(getString(R.string.btn_confirmar), (d, w) -> {
-                    actualizarEstado("listo");
-                    abrirWhatsApp(
-                            ordenActual.getCliente() != null
-                                    ? ordenActual.getCliente().getTelefono() : "",
-                            mensajeWa);
+                    viewModel.actualizarEstado(ordenId, "listo");
+                    abrirWhatsApp(orden.getCliente() != null
+                            ? orden.getCliente().getTelefono() : "", mensajeWa);
                 })
                 .setNegativeButton(getString(R.string.btn_cancelar), null)
                 .show();
     }
 
-    /**
-     * Muestra el diálogo selector de estados.
-     */
     private void mostrarSelectorEstado() {
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(getString(R.string.dialogo_cambiar_estado_titulo))
-                .setItems(UtilEstado.obtenerEtiquetasEstados(), (d, indice) -> {
-                    String nuevoEstado = UtilEstado.obtenerTodosLosEstados()[indice];
-                    actualizarEstado(nuevoEstado);
-                })
+                .setItems(UtilEstado.obtenerEtiquetasEstados(), (d, indice) ->
+                        viewModel.actualizarEstado(
+                                ordenId,
+                                UtilEstado.obtenerTodosLosEstados()[indice]))
                 .show();
     }
 
-    /**
-     * Actualiza el estado de la orden en Supabase.
-     */
-    private void actualizarEstado(String nuevoEstado) {
-        Map<String, Object> datos = new HashMap<>();
-        datos.put("estado", nuevoEstado);
+    private void mostrarDialogoPago() {
+        View vista = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialogo_registrar_pago, null);
 
-        SupabaseCliente.obtenerServicio()
-                .actualizarOrden("eq." + ordenId, datos)
-                .enqueue(new Callback<Orden>() {
-                    @Override
-                    public void onResponse(@NonNull Call<Orden> c,
-                                           @NonNull Response<Orden> r) {
-                        if (enlace == null) return;
-                        if (r.isSuccessful()) {
-                            ordenActual.setEstado(nuevoEstado);
-                            actualizarChipEstado(nuevoEstado);
-                            mostrarSnackbar(
-                                    getString(R.string.msg_estado_actualizado));
+        TextInputLayout layoutMonto  = vista.findViewById(R.id.layout_monto);
+        TextInputEditText campMonto  = vista.findViewById(R.id.campo_monto);
+        TextInputEditText campNota   = vista.findViewById(R.id.campo_nota_pago);
+        ChipGroup chipMetodo         = vista.findViewById(R.id.chip_group_metodo);
+
+        final String[] metodo = {"efectivo"};
+        chipMetodo.setOnCheckedStateChangeListener((grupo, ids) -> {
+            if (ids.isEmpty()) return;
+            int id = ids.get(0);
+            if      (id == vista.findViewById(R.id.chip_efectivo).getId())     metodo[0] = "efectivo";
+            else if (id == vista.findViewById(R.id.chip_yape).getId())         metodo[0] = "yape";
+            else if (id == vista.findViewById(R.id.chip_plin).getId())         metodo[0] = "plin";
+            else if (id == vista.findViewById(R.id.chip_transferencia).getId())metodo[0] = "transferencia";
+            else                                                                metodo[0] = "tarjeta";
+        });
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(getString(R.string.titulo_registrar_pago))
+                .setView(vista)
+                .setPositiveButton(getString(R.string.btn_registrar_pago), null)
+                .setNegativeButton(getString(R.string.btn_cancelar), null)
+                .create();
+
+        dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(v -> {
+                    String montoStr = campMonto.getText() != null
+                            ? campMonto.getText().toString().trim() : "";
+                    if (montoStr.isEmpty()) {
+                        layoutMonto.setError(getString(R.string.error_monto_vacio));
+                        return;
+                    }
+                    try {
+                        double monto = Double.parseDouble(montoStr);
+                        if (monto <= 0) {
+                            layoutMonto.setError(getString(R.string.error_monto_invalido));
+                            return;
                         }
+                        String nota = campNota.getText() != null
+                                ? campNota.getText().toString().trim() : "";
+                        viewModel.registrarPago(ordenId, monto, metodo[0], nota);
+                        dialog.dismiss();
+                    } catch (NumberFormatException e) {
+                        layoutMonto.setError(getString(R.string.error_monto_invalido));
                     }
+                }));
 
-                    @Override
-                    public void onFailure(@NonNull Call<Orden> c,
-                                          @NonNull Throwable e) {
-                        if (enlace != null)
-                            mostrarSnackbar(getString(R.string.msg_error_estado));
-                    }
-                });
+        dialog.show();
     }
 
-    /** Muestra un Snackbar con el mensaje indicado. */
     private void mostrarSnackbar(String mensaje) {
-        Snackbar.make(enlace.getRoot(), mensaje, Snackbar.LENGTH_SHORT).show();
+        if (getContext() != null)
+            MensajeUtils.mostrar(requireContext(), mensaje);
     }
 
     @Override

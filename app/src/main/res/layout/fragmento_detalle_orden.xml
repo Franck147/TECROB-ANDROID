@@ -442,6 +442,25 @@
                             android:textStyle="bold"/>
                     </LinearLayout>
 
+                    <!-- Divisor -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="0.5dp"
+                        android:background="@color/fondo_borde"
+                        android:layout_marginTop="12dp"
+                        android:layout_marginBottom="10dp"/>
+
+                    <!-- Botón registrar pago -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/boton_registrar_pago"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/btn_registrar_pago"
+                        android:textSize="13sp"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        app:strokeColor="@color/rojo_primario"
+                        android:textColor="@color/rojo_primario"/>
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

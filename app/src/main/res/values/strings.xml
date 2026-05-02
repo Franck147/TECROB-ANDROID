@@ -37,6 +37,7 @@
     <string name="chip_en_progreso">En progreso</string>
     <string name="chip_listas">Listas</string>
     <string name="msg_sin_resultados">No se encontraron órdenes</string>
+    <string name="msg_sin_servicios">No se encontraron servicios</string>
     <string name="msg_error_cargar">Error al cargar. Jala para reintentar.</string>
     <string name="titulo_nueva_orden">Nueva orden</string>
     <string name="seccion_cliente">Datos del cliente</string>
@@ -140,4 +141,28 @@
     <string name="lbl_tecnico_asignado">Técnico asignado</string>
     <string name="lbl_prioridad_urgente">URGENTE</string>
     <string name="lbl_prioridad_alta">ALTA</string>
+    <string name="titulo_config">Mi cuenta</string>
+    <string name="lbl_rol_admin">Administrador</string>
+    <string name="lbl_rol_tecnico">Técnico</string>
+    <string name="btn_cerrar_sesion">Cerrar sesión</string>
+    <string name="lbl_confirmar_cierre">¿Cerrar sesión?</string>
+    <string name="msg_confirmar_cierre">Tendrás que volver a ingresar tus credenciales.</string>
+    <string name="titulo_registrar_pago">Registrar pago</string>
+    <string name="hint_monto_pago">Monto (S/)</string>
+    <string name="lbl_metodo_pago">Método de pago</string>
+    <string name="metodo_efectivo">Efectivo</string>
+    <string name="metodo_yape">Yape</string>
+    <string name="metodo_plin">Plin</string>
+    <string name="metodo_transferencia">Transferencia</string>
+    <string name="metodo_tarjeta">Tarjeta</string>
+    <string name="hint_nota_pago">Nota (opcional)</string>
+    <string name="btn_registrar_pago">Registrar pago</string>
+    <string name="msg_pago_registrado">Pago registrado correctamente</string>
+    <string name="error_monto_vacio">Ingresa el monto del pago</string>
+    <string name="error_monto_invalido">Ingresa un monto válido mayor a 0</string>
+    <string name="seccion_servicios">Servicios a realizar</string>
+    <string name="btn_agregar_servicio_orden">+ Agregar servicio</string>
+    <string name="lbl_subtotal_servicios">Subtotal servicios:</string>
+    <string name="titulo_seleccionar_servicios">Seleccionar servicios</string>
+    <string name="msg_sin_catalogo">No hay servicios disponibles</string>
 </resources>

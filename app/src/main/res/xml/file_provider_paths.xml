@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    file_provider_paths.xml
+    Define las rutas que FileProvider puede compartir con otras apps.
+    Usado para compartir el PDF de la orden por WhatsApp, email, Drive, etc.
+-->
+<paths>
+    <external-files-path
+        name="pdfs"
+        path="pdfs/"/>
+</paths>

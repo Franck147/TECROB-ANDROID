@@ -1,6 +1,7 @@
 package com.example.tecrobsys.modelos;
 
 import com.google.gson.annotations.SerializedName;
+import java.util.List;
 
 /**
  * Orden — Modelo principal del sistema.
@@ -81,6 +82,10 @@ public class Orden {
     @SerializedName("equipo")
     private Equipo equipo;
 
+    // Servicios aplicados a la orden (JOIN orden_servicio → servicio_catalogo)
+    @SerializedName("orden_servicio")
+    private List<ItemOrden> itemsServicio;
+
     // Constructor vacío requerido por Gson para deserializar JSON
     public Orden() {}
 
@@ -106,6 +111,7 @@ public class Orden {
     public ClienteResumen getCliente() { return cliente; }
     public UsuarioResumen getTecnico() { return tecnico; }
     public Equipo getEquipo() { return equipo; }
+    public List<ItemOrden> getItemsServicio() { return itemsServicio; }
 
     // ── Setters ───────────────────────────────────────────────────
 
@@ -127,6 +133,7 @@ public class Orden {
     public void setCliente(ClienteResumen c) { this.cliente = c; }
     public void setTecnico(UsuarioResumen t) { this.tecnico = t; }
     public void setEquipo(Equipo e) { this.equipo = e; }
+    public void setItemsServicio(List<ItemOrden> items) { this.itemsServicio = items; }
 
     // ── Clase interna: resumen de cliente para mostrar en lista ───
     // Solo trae los campos necesarios para la UI (no todos)

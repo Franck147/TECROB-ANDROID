@@ -5,10 +5,12 @@ import android.view.MenuItem;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.example.tecrobsys.R;
 import com.example.tecrobsys.databinding.ActivityMainBinding;
 import com.example.tecrobsys.fragmentos.catalogo.FragmentoCatalogo;
+import com.example.tecrobsys.fragmentos.configuracion.FragmentoConfiguracion;
 import com.example.tecrobsys.fragmentos.dashboard.FragmentoDashboard;
 import com.example.tecrobsys.fragmentos.nueva_orden.FragmentoNuevaOrden;
 import com.example.tecrobsys.fragmentos.ordenes.FragmentoOrdenes;
@@ -36,11 +38,12 @@ public class ActividadPrincipal extends AppCompatActivity
     // ViewBinding — acceso seguro a las vistas
     private ActivityMainBinding enlace;
 
-    // Los 4 fragmentos principales — se crean una sola vez
-    private FragmentoDashboard  fragmentoDashboard;
-    private FragmentoOrdenes    fragmentoOrdenes;
-    private FragmentoNuevaOrden fragmentoNuevaOrden;
-    private FragmentoCatalogo   fragmentoCatalogo;
+    // Los 5 fragmentos principales — se crean una sola vez
+    private FragmentoDashboard     fragmentoDashboard;
+    private FragmentoOrdenes       fragmentoOrdenes;
+    private FragmentoNuevaOrden    fragmentoNuevaOrden;
+    private FragmentoCatalogo      fragmentoCatalogo;
+    private FragmentoConfiguracion fragmentoConfiguracion;
 
     // Fragmento actualmente visible en pantalla
     private Fragment fragmentoActivo;
@@ -55,11 +58,22 @@ public class ActividadPrincipal extends AppCompatActivity
 
         // Restaurar el token JWT en el cliente HTTP
         // (por si la app fue cerrada y se reabre con sesión activa)
-        SesionManager.obtenerInstancia(this).restaurarToken();
+        SesionManager sesion = SesionManager.obtenerInstancia(this);
+        sesion.restaurarToken();
+
+        // Ocultar el ítem "Config." si el usuario no es administrador
+        // (el ítem ya existe en el menú pero solo los admins deben verlo)
+        boolean esAdmin = sesion.esAdministrador();
+        // Se aplica después de configurarNavegacion() para que el menú esté listo
 
         // Inicializar fragmentos y configurar la navegación
         inicializarFragmentos();
         configurarNavegacion();
+
+        // Config visible para todos — contiene perfil + cierre de sesión
+        enlace.navegacionInferior.getMenu()
+                .findItem(R.id.nav_config)
+                .setVisible(true);
     }
 
     /**
@@ -70,20 +84,23 @@ public class ActividadPrincipal extends AppCompatActivity
      * lo que preserva su estado (listas cargadas, filtros, etc.)
      */
     private void inicializarFragmentos() {
-        fragmentoDashboard  = new FragmentoDashboard();
-        fragmentoOrdenes    = new FragmentoOrdenes();
-        fragmentoNuevaOrden = new FragmentoNuevaOrden();
-        fragmentoCatalogo   = new FragmentoCatalogo();
+        fragmentoDashboard     = new FragmentoDashboard();
+        fragmentoOrdenes       = new FragmentoOrdenes();
+        fragmentoNuevaOrden    = new FragmentoNuevaOrden();
+        fragmentoCatalogo      = new FragmentoCatalogo();
+        fragmentoConfiguracion = new FragmentoConfiguracion();
 
         // Agregar todos al contenedor pero ocultar todos menos el Dashboard
         getSupportFragmentManager().beginTransaction()
-                .add(R.id.contenedor_fragmento, fragmentoDashboard,  "dashboard")
-                .add(R.id.contenedor_fragmento, fragmentoOrdenes,    "ordenes")
-                .add(R.id.contenedor_fragmento, fragmentoNuevaOrden, "nueva_orden")
-                .add(R.id.contenedor_fragmento, fragmentoCatalogo,   "catalogo")
+                .add(R.id.contenedor_fragmento, fragmentoDashboard,     "dashboard")
+                .add(R.id.contenedor_fragmento, fragmentoOrdenes,       "ordenes")
+                .add(R.id.contenedor_fragmento, fragmentoNuevaOrden,    "nueva_orden")
+                .add(R.id.contenedor_fragmento, fragmentoCatalogo,      "catalogo")
+                .add(R.id.contenedor_fragmento, fragmentoConfiguracion, "config")
                 .hide(fragmentoOrdenes)
                 .hide(fragmentoNuevaOrden)
                 .hide(fragmentoCatalogo)
+                .hide(fragmentoConfiguracion)
                 .commit();
 
         fragmentoActivo = fragmentoDashboard;
@@ -130,7 +147,7 @@ public class ActividadPrincipal extends AppCompatActivity
             mostrarFragmento(fragmentoCatalogo);
             return true;
         } else if (id == R.id.nav_config) {
-            // TODO: Agregar FragmentoConfiguracion en el futuro
+            mostrarFragmento(fragmentoConfiguracion);
             return true;
         }
 
@@ -144,7 +161,13 @@ public class ActividadPrincipal extends AppCompatActivity
      * @param nuevoFragmento El fragmento a mostrar
      */
     private void mostrarFragmento(Fragment nuevoFragmento) {
-        // Si ya está visible no hacer nada
+        // Si hay un detalle de orden en el back stack, cerrarlo primero.
+        // Al hacer pop, la transacción se revierte: fragmentoActivo vuelve a ser visible.
+        if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+            getSupportFragmentManager().popBackStackImmediate(
+                    null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        }
+
         if (nuevoFragmento == fragmentoActivo) return;
 
         getSupportFragmentManager().beginTransaction()

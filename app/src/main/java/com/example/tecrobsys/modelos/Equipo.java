@@ -34,6 +34,10 @@ public class Equipo {
     @SerializedName("descripcion_general")
     private String descripcionGeneral;
 
+    // Accesorios entregados junto con el equipo (coma-separados)
+    @SerializedName("accesorios")
+    private String accesorios;
+
     @SerializedName("created_at")
     private String creadoEn;
 
@@ -50,6 +54,7 @@ public class Equipo {
     public String getNumeroSerie() { return numeroSerie; }
     public String getDesperfecto() { return desperfecto; }
     public String getDescripcionGeneral() { return descripcionGeneral; }
+    public String getAccesorios() { return accesorios; }
     public String getCreadoEn() { return creadoEn; }
 
     // ── Setters ───────────────────────────────────────────────────
@@ -62,6 +67,7 @@ public class Equipo {
     public void setNumeroSerie(String n) { this.numeroSerie = n; }
     public void setDesperfecto(String d) { this.desperfecto = d; }
     public void setDescripcionGeneral(String d) { this.descripcionGeneral = d; }
+    public void setAccesorios(String a) { this.accesorios = a; }
 
     // ── Métodos de utilidad ───────────────────────────────────────
 

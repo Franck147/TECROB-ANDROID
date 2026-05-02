@@ -33,6 +33,7 @@ public class SesionManager {
     private static final String CLAVE_TECNICO_ID  = "tecnico_id";
     private static final String CLAVE_NOMBRE      = "nombre_tecnico";
     private static final String CLAVE_EMAIL       = "email_tecnico";
+    private static final String CLAVE_ROL         = "rol_tecnico";
     private static final String CLAVE_AUTENTICADO = "esta_autenticado";
 
     // Instancia única del Singleton
@@ -81,6 +82,16 @@ public class SesionManager {
 
     /**
      * Guarda todos los datos de sesión después del login exitoso.
+     * Sobrecarga sin rol — usa "tecnico" como valor por defecto.
+     * Mantiene compatibilidad con código existente.
+     */
+    public void guardarSesion(String token, int empresaId,
+                              int tecnicoId, String nombre, String email) {
+        guardarSesion(token, empresaId, tecnicoId, nombre, email, "tecnico");
+    }
+
+    /**
+     * Guarda todos los datos de sesión después del login exitoso.
      * También actualiza el token en SupabaseCliente para
      * que todos los requests siguientes lo usen.
      *
@@ -89,15 +100,18 @@ public class SesionManager {
      * @param tecnicoId ID del técnico/usuario
      * @param nombre    Nombre para mostrar en la UI
      * @param email     Email del usuario
+     * @param rol       "administrador" o "tecnico"
      */
     public void guardarSesion(String token, int empresaId,
-                              int tecnicoId, String nombre, String email) {
+                              int tecnicoId, String nombre,
+                              String email, String rol) {
         preferencias.edit()
                 .putString(CLAVE_TOKEN, token)
                 .putInt(CLAVE_EMPRESA_ID, empresaId)
                 .putInt(CLAVE_TECNICO_ID, tecnicoId)
                 .putString(CLAVE_NOMBRE, nombre)
                 .putString(CLAVE_EMAIL, email)
+                .putString(CLAVE_ROL, rol)
                 .putBoolean(CLAVE_AUTENTICADO, true)
                 .apply();
 
@@ -141,6 +155,16 @@ public class SesionManager {
     /** @return El email del usuario autenticado */
     public String obtenerEmail() {
         return preferencias.getString(CLAVE_EMAIL, "");
+    }
+
+    /** @return El rol del usuario: "administrador" o "tecnico" */
+    public String obtenerRol() {
+        return preferencias.getString(CLAVE_ROL, "tecnico");
+    }
+
+    /** @return true si el usuario autenticado es administrador */
+    public boolean esAdministrador() {
+        return "administrador".equals(obtenerRol());
     }
 
     /**

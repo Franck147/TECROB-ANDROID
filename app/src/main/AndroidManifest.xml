@@ -17,6 +17,12 @@
     <!-- Para el botón "Llamar al cliente" en el detalle de orden -->
     <uses-permission android:name="android.permission.CALL_PHONE"/>
 
+    <!-- Para guardar el PDF en almacenamiento externo (solo API 28 y menor) -->
+    <!-- En API 29+ getExternalFilesDir() es espacio privado, no requiere permiso -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28"/>
+
     <!-- ── APLICACIÓN ─────────────────────────────────────────────── -->
     <application
         android:allowBackup="true"
@@ -52,6 +58,21 @@
             android:name=".actividades.ActividadPrincipal"
             android:exported="false"
             android:windowSoftInputMode="adjustResize"/>
+
+        <!--
+            FileProvider — permite compartir el PDF generado con otras apps
+            (WhatsApp, Gmail, Drive) sin exponer rutas internas del dispositivo.
+            La URI compartida tiene permisos de lectura temporales.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_provider_paths"/>
+        </provider>
 
     </application>
 
