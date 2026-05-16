@@ -27,8 +27,9 @@ import java.util.concurrent.TimeUnit;
 public class SupabaseCliente {
 
     // ── Instancias Singleton ───────────────────────────────────────
-    private static Retrofit instanciaRest = null;   // Para /rest/v1/
-    private static Retrofit instanciaAuth = null;   // Para /auth/v1/
+    private static Retrofit instanciaRest     = null;   // Para /rest/v1/
+    private static Retrofit instanciaAuth     = null;   // Para /auth/v1/
+    private static Retrofit instanciaSignup   = null;   // Para /auth/v1/signup (sin JWT de sesión)
 
     // Token JWT del usuario autenticado (se actualiza al hacer login)
     private static String tokenSesion = null;
@@ -41,8 +42,9 @@ public class SupabaseCliente {
      */
     public static void establecerToken(String token) {
         tokenSesion = token;
-        instanciaRest = null; // Forzar recreación con el nuevo token
+        instanciaRest = null;
         instanciaAuth = null;
+        // instanciaSignup no se resetea: siempre usa anon key
     }
 
     /**
@@ -134,5 +136,32 @@ public class SupabaseCliente {
                     .build();
         }
         return instanciaAuth.create(SupabaseServicio.class);
+    }
+
+    /**
+     * Cliente exclusivo para registrar nuevos usuarios vía /auth/v1/signup.
+     * Usa SOLO la anon key como Bearer — nunca el JWT del usuario activo.
+     * Supabase rechaza el signup si recibe un JWT de sesión activa.
+     */
+    public static SupabaseServicio obtenerServicioSignup() {
+        if (instanciaSignup == null) {
+            OkHttpClient cliente = new OkHttpClient.Builder()
+                    .addInterceptor(cadena -> {
+                        Request req = cadena.request().newBuilder()
+                                .header("apikey", BuildConfig.SUPABASE_ANON_KEY)
+                                .header("Authorization", "Bearer " + BuildConfig.SUPABASE_ANON_KEY)
+                                .header("Content-Type", "application/json")
+                                .build();
+                        return cadena.proceed(req);
+                    })
+                    .build();
+
+            instanciaSignup = new Retrofit.Builder()
+                    .baseUrl(BuildConfig.SUPABASE_URL + "/auth/v1/")
+                    .client(cliente)
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build();
+        }
+        return instanciaSignup.create(SupabaseServicio.class);
     }
 }

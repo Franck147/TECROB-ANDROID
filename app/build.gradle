@@ -1,7 +1,7 @@
 // ============================================================
 //  build.gradle — Módulo :app
 //  TecrobSys - Sistema de Gestión de Taller Técnico
-//  Material Design 3 | Java 21 | minSdk 26 | targetSdk 34
+//  Material Design 3 | Java 21 | minSdk 26 | targetSdk 36
 // ============================================================
 plugins {
     id 'com.android.application'
@@ -9,12 +9,12 @@ plugins {
 
 android {
     namespace 'com.example.tecrobsys'
-    compileSdk 34
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.example.tecrobsys"
         minSdk 26
-        targetSdk 34
+        targetSdk 36
         versionCode 1
         versionName "1.0.0"
 
@@ -25,6 +25,7 @@ android {
         // supabase.com → tu proyecto → Settings → API
         buildConfigField "String", "SUPABASE_URL",      '"https://cgjzbwqoeyqtvnfspybg.supabase.co"'
         buildConfigField "String", "SUPABASE_ANON_KEY", '"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNnanpid3FvZXlxdHZuZnNweWJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NDQxMTQsImV4cCI6MjA5MDQyMDExNH0.U2ZL7VXng-w6xH6UXbca-mgmQlZl6V5JFX5MFemIk3s"'
+        buildConfigField "String", "DNI_API_TOKEN",     '"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImFkbGVyY2lzbmVyb3MxNDdAZ21haWwuY29tIn0.oXEO8knJ9JOVp6mhAG_T9DKOSqN78IsbWXLTK13-QRo"'
     }
 
     buildFeatures {
@@ -51,16 +52,16 @@ android {
 dependencies {
 
     // ── Android base ──────────────────────────────────────────
-    implementation 'androidx.appcompat:appcompat:1.7.0'
-    implementation 'androidx.core:core-ktx:1.13.1'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'androidx.activity:activity:1.9.0'
+    implementation libs.appcompat
+    implementation 'androidx.core:core:1.13.1'
+    implementation libs.constraintlayout
+    implementation libs.activity
 
     // ── Material Design 3 ─────────────────────────────────────
     // Incluye todos los componentes M3:
     // Botones, Chips, Cards, TextFields, BottomNavigation,
     // FAB, Dialogs, Snackbars, TopAppBar, NavigationBar
-    implementation 'com.google.android.material:material:1.11.0'
+    implementation libs.material
     // ── Navegación entre Fragmentos ───────────────────────────
     // Maneja el BackStack y las transiciones entre pantallas
     implementation 'androidx.navigation:navigation-fragment:2.7.7'
@@ -101,7 +102,7 @@ dependencies {
     implementation 'androidx.security:security-crypto:1.1.0-alpha06'
 
     // ── Tests ─────────────────────────────────────────────────
-    testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    testImplementation libs.junit
+    androidTestImplementation libs.ext.junit
+    androidTestImplementation libs.espresso.core
 }

@@ -2,6 +2,7 @@ package com.example.tecrobsys.fragmentos.nueva_orden;
 
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.InputFilter;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,6 +13,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.datepicker.MaterialDatePicker;
@@ -68,6 +71,8 @@ public class FragmentoNuevaOrden extends Fragment
         empresaId = sesion.obtenerEmpresaId();
         tecnicoId = sesion.obtenerTecnicoId();
 
+        ajustarPaddingConTeclado();
+        forzarMayusculas();
         configurarBuscadorCliente();
         configurarChipsEquipo();
         configurarChipsPrioridad();
@@ -88,6 +93,25 @@ public class FragmentoNuevaOrden extends Fragment
     }
 
     // ── Configuración de UI ───────────────────────────────────────────
+
+    private void ajustarPaddingConTeclado() {
+        ViewCompat.setOnApplyWindowInsetsListener(enlace.getRoot(), (v, insets) -> {
+            int imeBottom = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
+            int navBottom = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+            v.setPadding(0, 0, 0, Math.max(imeBottom, navBottom));
+            return insets;
+        });
+    }
+
+    private void forzarMayusculas() {
+        InputFilter[] filtro = { new InputFilter.AllCaps() };
+        enlace.campoMarca.setFilters(filtro);
+        enlace.campoModelo.setFilters(filtro);
+        enlace.campoSerie.setFilters(filtro);
+        enlace.campoDesperfecto.setFilters(filtro);
+        enlace.campoDescripcion.setFilters(filtro);
+        enlace.campoContrasena.setFilters(filtro);
+    }
 
     private void configurarBuscadorCliente() {
         enlace.campoCliente.addTextChangedListener(new TextWatcher() {

@@ -55,6 +55,7 @@
             android:layout_height="wrap_content"
             android:hint="@string/hint_buscar_cliente"
             style="@style/EstiloCampo"
+            android:minHeight="64dp"
             android:layout_marginBottom="8dp">
             <com.google.android.material.textfield.MaterialAutoCompleteTextView
                 android:id="@+id/campo_cliente"
@@ -62,7 +63,9 @@
                 android:layout_height="wrap_content"
                 android:textColor="@color/texto_principal"
                 android:textColorHint="@color/texto_muted"
-                android:textSize="14sp"
+                android:textSize="16sp"
+                android:paddingTop="20dp"
+                android:paddingBottom="16dp"
                 android:inputType="textPersonName"
                 android:completionThreshold="3"/>
         </com.google.android.material.textfield.TextInputLayout>
@@ -134,7 +137,7 @@
                     android:id="@+id/campo_marca"
                     android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:textColor="@color/texto_principal" android:textSize="14sp"
-                    android:inputType="textCapWords"/>
+                    android:inputType="textCapCharacters"/>
             </com.google.android.material.textfield.TextInputLayout>
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="0dp" android:layout_height="wrap_content"
@@ -144,7 +147,7 @@
                     android:id="@+id/campo_modelo"
                     android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:textColor="@color/texto_principal" android:textSize="14sp"
-                    android:inputType="textCapWords"/>
+                    android:inputType="textCapCharacters"/>
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
 
@@ -177,7 +180,7 @@
                 android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:minLines="3" android:gravity="top"
                 android:textColor="@color/texto_principal" android:textSize="14sp"
-                android:inputType="textMultiLine"/>
+                android:inputType="textMultiLine|textCapCharacters"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -189,7 +192,7 @@
                 android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:minLines="2" android:gravity="top"
                 android:textColor="@color/texto_principal" android:textSize="14sp"
-                android:inputType="textMultiLine"/>
+                android:inputType="textMultiLine|textCapCharacters"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- ══ 5. PRIORIDAD ════════════════════════════════════ -->
@@ -313,7 +316,8 @@
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/campo_contrasena"
                     android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:textColor="@color/texto_principal" android:textSize="14sp"/>
+                    android:textColor="@color/texto_principal" android:textSize="14sp"
+                    android:inputType="textCapCharacters"/>
             </com.google.android.material.textfield.TextInputLayout>
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="0dp" android:layout_height="wrap_content"

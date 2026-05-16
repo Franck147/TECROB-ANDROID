@@ -1,34 +1,30 @@
 package com.example.tecrobsys.fragmentos.nueva_orden;
 
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
-import com.example.tecrobsys.utils.MensajeUtils;
+import com.example.tecrobsys.BuildConfig;
 import com.example.tecrobsys.R;
 import com.example.tecrobsys.databinding.DialogoNuevoClienteBinding;
 import com.example.tecrobsys.modelos.Cliente;
+import com.example.tecrobsys.modelos.DNIRespuesta;
+import com.example.tecrobsys.red.ApiDNICliente;
+import com.example.tecrobsys.utils.MensajeUtils;
 import com.example.tecrobsys.viewmodels.NuevoClienteViewModel;
 import java.util.HashMap;
 import java.util.Map;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
-/**
- * DialogoNuevoCliente — BottomSheet para registrar un nuevo cliente.
- *
- * Patrón de comunicación con el fragmento padre:
- *   FragmentoNuevaOrden implements OnClienteCreadoListener
- *   → este diálogo llama getParentFragment() para notificar al padre
- *
- * El empresaId se pasa via setArguments() (patrón correcto para Fragments).
- *
- * Uso:
- *   DialogoNuevoCliente d = DialogoNuevoCliente.nuevaInstancia(empresaId);
- *   d.show(getParentFragmentManager(), "nuevo_cliente");
- */
 public class DialogoNuevoCliente extends BottomSheetDialogFragment {
 
     private static final String ARG_EMPRESA_ID = "empresa_id";
@@ -40,6 +36,7 @@ public class DialogoNuevoCliente extends BottomSheetDialogFragment {
 
     private DialogoNuevoClienteBinding enlace;
     private NuevoClienteViewModel viewModel;
+    private Call<DNIRespuesta> llamadaDNI;
 
     /** Método fábrica — forma correcta de instanciar este fragmento. */
     public static DialogoNuevoCliente nuevaInstancia(int empresaId) {
@@ -68,6 +65,7 @@ public class DialogoNuevoCliente extends BottomSheetDialogFragment {
 
         observarViewModel();
         configurarBotones();
+        configurarBuscadorDNI();
     }
 
     private void observarViewModel() {
@@ -80,7 +78,6 @@ public class DialogoNuevoCliente extends BottomSheetDialogFragment {
 
         viewModel.clienteCreado.observe(getViewLifecycleOwner(), cliente -> {
             if (cliente != null) {
-                // Notificar al fragmento padre vía interfaz
                 if (getParentFragment() instanceof OnClienteCreadoListener) {
                     ((OnClienteCreadoListener) getParentFragment()).alCrearCliente(cliente);
                 }
@@ -102,6 +99,85 @@ public class DialogoNuevoCliente extends BottomSheetDialogFragment {
             if (validar()) guardar();
         });
         enlace.botonCancelarCliente.setOnClickListener(v -> dismiss());
+    }
+
+    private void configurarBuscadorDNI() {
+        enlace.campoDniCliente.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int i, int c, int a) {}
+            @Override public void onTextChanged(CharSequence s, int i, int b, int c) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (s.length() == 8) {
+                    consultarDNI(s.toString());
+                } else {
+                    if (llamadaDNI != null) {
+                        llamadaDNI.cancel();
+                        llamadaDNI = null;
+                        mostrarCargandoDNI(false);
+                    }
+                }
+            }
+        });
+    }
+
+    private void consultarDNI(String numeroDNI) {
+        if (llamadaDNI != null) llamadaDNI.cancel();
+
+        mostrarCargandoDNI(true);
+
+        llamadaDNI = ApiDNICliente.obtenerServicio()
+                .consultar(numeroDNI, BuildConfig.DNI_API_TOKEN);
+
+        llamadaDNI.enqueue(new Callback<DNIRespuesta>() {
+            @Override
+            public void onResponse(@NonNull Call<DNIRespuesta> call,
+                                   @NonNull Response<DNIRespuesta> respuesta) {
+                if (enlace == null || !isAdded()) return;
+                mostrarCargandoDNI(false);
+
+                if (respuesta.isSuccessful() && respuesta.body() != null) {
+                    autocompletar(respuesta.body());
+                } else {
+                    Toast.makeText(getContext(),
+                            "DNI no encontrado", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<DNIRespuesta> call, @NonNull Throwable t) {
+                if (enlace == null || !isAdded() || call.isCanceled()) return;
+                mostrarCargandoDNI(false);
+                Toast.makeText(getContext(),
+                        "Error de conexión al consultar DNI", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void autocompletar(DNIRespuesta datos) {
+        if (datos.getNombres() != null) {
+            enlace.campoNombreCliente.setText(datos.getNombres());
+        }
+
+        String apellido = "";
+        if (datos.getApellidoPaterno() != null) {
+            apellido = datos.getApellidoPaterno();
+        }
+        if (datos.getApellidoMaterno() != null && !datos.getApellidoMaterno().isEmpty()) {
+            apellido += (apellido.isEmpty() ? "" : " ") + datos.getApellidoMaterno();
+        }
+        if (!apellido.isEmpty()) {
+            enlace.campoApellidoCliente.setText(apellido);
+        }
+
+        enlace.campoTelefonoCliente.requestFocus();
+    }
+
+    private void mostrarCargandoDNI(boolean cargando) {
+        if (enlace == null) return;
+        enlace.progressGuardandoCliente.setVisibility(cargando ? View.VISIBLE : View.GONE);
+        enlace.botonGuardarCliente.setEnabled(!cargando);
+        enlace.campoDniCliente.setEnabled(!cargando);
     }
 
     private boolean validar() {
@@ -140,6 +216,10 @@ public class DialogoNuevoCliente extends BottomSheetDialogFragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        if (llamadaDNI != null) {
+            llamadaDNI.cancel();
+            llamadaDNI = null;
+        }
         enlace = null;
     }
 }

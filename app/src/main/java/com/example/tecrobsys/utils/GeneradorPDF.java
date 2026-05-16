@@ -2,6 +2,7 @@ package com.example.tecrobsys.utils;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import java.util.Locale;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
@@ -169,6 +170,11 @@ public class GeneradorPDF {
         return y + 55;
     }
 
+    /** Convierte texto a mayúsculas; retorna "—" si es nulo o vacío */
+    private static String u(String s) {
+        return (s != null && !s.isEmpty()) ? s.toUpperCase(Locale.getDefault()) : "—";
+    }
+
     /** Línea separadora horizontal roja */
     private static int dibujarSeparador(Canvas canvas, int y) {
         Paint linea = new Paint();
@@ -215,8 +221,8 @@ public class GeneradorPDF {
 
         if (orden.getCliente() != null) {
             Orden.ClienteResumen cli = orden.getCliente();
-            y = dibujarFila(canvas, "Nombre:", cli.getNombreCompleto(), y);
-            y = dibujarFila(canvas, "Teléfono:", cli.getTelefono(), y);
+            y = dibujarFila(canvas, "Nombre:", u(cli.getNombreCompleto()), y);
+            y = dibujarFila(canvas, "Teléfono:", u(cli.getTelefono()), y);
         } else {
             y = dibujarFila(canvas, "Nombre:", "—", y);
         }
@@ -229,15 +235,15 @@ public class GeneradorPDF {
 
         if (orden.getEquipo() != null) {
             com.example.tecrobsys.modelos.Equipo eq = orden.getEquipo();
-            y = dibujarFila(canvas, "Tipo:", eq.getTipoFormateado(), y);
-            y = dibujarFila(canvas, "Marca / Modelo:", eq.getNombreCompleto(), y);
+            y = dibujarFila(canvas, "Tipo:", u(eq.getTipoFormateado()), y);
+            y = dibujarFila(canvas, "Marca / Modelo:", u(eq.getNombreCompleto()), y);
             if (eq.getNumeroSerie() != null && !eq.getNumeroSerie().isEmpty())
-                y = dibujarFila(canvas, "Nro. de serie:", eq.getNumeroSerie(), y);
-            y = dibujarFila(canvas, "Problema:", eq.getDesperfecto(), y);
+                y = dibujarFila(canvas, "Nro. de serie:", u(eq.getNumeroSerie()), y);
+            y = dibujarFila(canvas, "Problema:", u(eq.getDesperfecto()), y);
             if (eq.getDescripcionGeneral() != null && !eq.getDescripcionGeneral().isEmpty())
-                y = dibujarFila(canvas, "Estado general:", eq.getDescripcionGeneral(), y);
+                y = dibujarFila(canvas, "Estado general:", u(eq.getDescripcionGeneral()), y);
             if (eq.getAccesorios() != null && !eq.getAccesorios().isEmpty())
-                y = dibujarFila(canvas, "Accesorios:", eq.getAccesorios(), y);
+                y = dibujarFila(canvas, "Accesorios:", u(eq.getAccesorios()), y);
         } else {
             y = dibujarFila(canvas, "Equipo:", "Sin datos", y);
         }
@@ -250,7 +256,7 @@ public class GeneradorPDF {
 
         for (ItemOrden item : items) {
             if (item.getServicio() == null) continue;
-            String nombre = item.getServicio().getNombre();
+            String nombre = u(item.getServicio().getNombre());
             if (item.getCantidad() > 1) nombre += " ×" + item.getCantidad();
             String precio = String.format("S/ %.2f", item.getSubtotal());
 

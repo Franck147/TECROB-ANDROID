@@ -158,6 +158,24 @@ public interface SupabaseServicio {
     Call<List<Tecnico>> obtenerPerfilPorEmail(
             @Query("email") String emailFiltro);
 
+    @GET("tecnico")
+    Call<List<Tecnico>> listarTecnicos(
+            @Query("empresa_id") String empresaIdFiltro,
+            @Query("order") String orden);
+
+    @POST("tecnico")
+    @Headers("Accept: application/vnd.pgrst.object+json")
+    Call<Tecnico> crearTecnico(@Body Map<String, Object> datos);
+
+    @PATCH("tecnico")
+    @Headers("Prefer: return=minimal")
+    Call<Void> desactivarTecnico(
+            @Query("id") String idFiltro,
+            @Body Map<String, Object> datos);
+
+    @POST("signup")
+    Call<RespuestaAuth> registrarUsuario(@Body Map<String, Object> datos);
+
     // ════════════════════════════════════════════════════════
     //  RESPUESTA DE AUTENTICACIÓN
     // ════════════════════════════════════════════════════════
@@ -175,6 +193,17 @@ public interface SupabaseServicio {
 
         @SerializedName("user")
         public UsuarioAuth usuario;
+
+        // Cuando la confirmación de email está ACTIVADA en Supabase,
+        // el signup devuelve el usuario directamente en la raíz (sin envoltura "user")
+        @SerializedName("id")
+        public String id;
+
+        /** Devuelve el auth_user_id sin importar el formato de respuesta */
+        public String getAuthUserId() {
+            if (usuario != null && usuario.id != null) return usuario.id;
+            return id;
+        }
 
         public static class UsuarioAuth {
             @SerializedName("id")
