@@ -49,37 +49,246 @@
             android:letterSpacing="0.1"
             android:layout_marginBottom="8dp"/>
 
+        <!-- Campo DNI (oculto cuando hay cliente seleccionado) -->
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/layout_cliente"
+            android:id="@+id/layout_dni_busqueda"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/hint_buscar_cliente"
+            android:hint="@string/hint_buscar_dni"
             style="@style/EstiloCampo"
-            android:minHeight="64dp"
             android:layout_marginBottom="8dp">
-            <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                android:id="@+id/campo_cliente"
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/campo_dni_busqueda"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textColor="@color/texto_principal"
                 android:textColorHint="@color/texto_muted"
                 android:textSize="16sp"
-                android:paddingTop="20dp"
-                android:paddingBottom="16dp"
-                android:inputType="textPersonName"
-                android:completionThreshold="3"/>
+                android:inputType="number"
+                android:maxLength="8"/>
         </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/boton_nuevo_cliente"
+        <!-- Cargando búsqueda / registro -->
+        <ProgressBar
+            android:id="@+id/progress_buscando_cliente"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/btn_nuevo_cliente"
-            android:textSize="12sp"
-            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_gravity="center_horizontal"
+            android:indeterminateTint="@color/rojo_primario"
+            android:visibility="gone"
+            android:layout_marginBottom="4dp"/>
+
+        <!-- Card: cliente encontrado en BD -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_cliente_encontrado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardElevation="0dp"
+            app:cardCornerRadius="12dp"
+            app:strokeColor="@color/rojo_primario"
+            app:strokeWidth="1dp"
+            android:visibility="gone">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+                <TextView
+                    android:id="@+id/text_nombre_cliente_encontrado"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/texto_principal"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="4dp"/>
+                <TextView
+                    android:id="@+id/text_telefono_cliente_encontrado"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/texto_secundario"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="12dp"/>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/boton_seleccionar_cliente"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/btn_seleccionar_cliente"
+                    style="@style/EstiloBotonPrimario"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Card: cliente no encontrado → formulario de registro -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/contenedor_registro_cliente"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardElevation="0dp"
+            app:cardCornerRadius="12dp"
             app:strokeColor="@color/fondo_borde"
-            android:textColor="@color/texto_secundario"
-            android:layout_marginBottom="20dp"/>
+            app:strokeWidth="1dp"
+            android:visibility="gone">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/lbl_cliente_no_encontrado"
+                    android:textColor="@color/texto_secundario"
+                    android:textSize="13sp"
+                    android:layout_marginBottom="12dp"/>
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/layout_nombre_nuevo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/hint_nombre"
+                    style="@style/EstiloCampo"
+                    android:layout_marginBottom="10dp">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/campo_nombre_nuevo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/texto_principal"
+                        android:textSize="14sp"
+                        android:inputType="textPersonName|textCapWords"/>
+                </com.google.android.material.textfield.TextInputLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="10dp">
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:hint="@string/hint_apellido"
+                        style="@style/EstiloCampo">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/campo_apellido_nuevo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/texto_principal"
+                            android:textSize="14sp"
+                            android:inputType="textPersonName|textCapWords"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/layout_telefono_nuevo"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        android:hint="@string/hint_telefono"
+                        style="@style/EstiloCampo">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/campo_telefono_nuevo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/texto_principal"
+                            android:textSize="14sp"
+                            android:inputType="phone"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/hint_email_cliente"
+                    style="@style/EstiloCampo"
+                    android:layout_marginBottom="10dp">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/campo_email_nuevo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/texto_principal"
+                        android:textSize="14sp"
+                        android:inputType="textEmailAddress"/>
+                </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/hint_direccion"
+                    style="@style/EstiloCampo"
+                    android:layout_marginBottom="12dp">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/campo_direccion_nuevo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/texto_principal"
+                        android:textSize="14sp"
+                        android:inputType="textPostalAddress|textCapSentences"/>
+                </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/boton_registrar_cliente"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/btn_registrar_cliente"
+                    style="@style/EstiloBotonPrimario"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Cliente ya seleccionado (visible tras elegir o registrar) -->
+        <LinearLayout
+            android:id="@+id/contenedor_cliente_seleccionado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="20dp"
+            android:visibility="gone">
+
+            <!-- Fila nombre + botón Cambiar -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:id="@+id/text_nombre_cliente_sel"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="@color/texto_principal"
+                    android:textSize="15sp"
+                    android:textStyle="bold"/>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/boton_cambiar_cliente"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/btn_cambiar_cliente"
+                    android:textSize="12sp"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    app:strokeColor="@color/fondo_borde"
+                    android:textColor="@color/texto_secundario"/>
+            </LinearLayout>
+
+            <!-- Fila teléfono + botón Editar -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="4dp">
+                <TextView
+                    android:id="@+id/text_telefono_cliente_sel"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="@color/texto_secundario"
+                    android:textSize="14sp"/>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/boton_editar_telefono"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/btn_editar_telefono"
+                    android:textSize="11sp"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    app:strokeColor="@color/fondo_borde"
+                    android:textColor="@color/texto_secundario"/>
+            </LinearLayout>
+        </LinearLayout>
 
         <!-- ══ 2. TIPO DE EQUIPO ════════════════════════════════ -->
         <TextView

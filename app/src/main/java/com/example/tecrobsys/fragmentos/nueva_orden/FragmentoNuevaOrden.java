@@ -7,7 +7,6 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
@@ -19,14 +18,20 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.example.tecrobsys.utils.MensajeUtils;
+import com.example.tecrobsys.BuildConfig;
 import com.example.tecrobsys.R;
 import com.example.tecrobsys.actividades.ActividadPrincipal;
 import com.example.tecrobsys.databinding.FragmentoNuevaOrdenBinding;
 import com.example.tecrobsys.modelos.Cliente;
+import com.example.tecrobsys.modelos.DNIRespuesta;
 import com.example.tecrobsys.modelos.ServicioCatalogo;
+import com.example.tecrobsys.red.ApiDNICliente;
 import com.example.tecrobsys.utils.SesionManager;
 import com.example.tecrobsys.viewmodels.NuevaOrdenViewModel;
 import java.util.ArrayList;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,14 +40,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
-public class FragmentoNuevaOrden extends Fragment
-        implements DialogoNuevoCliente.OnClienteCreadoListener {
+public class FragmentoNuevaOrden extends Fragment {
 
     private FragmentoNuevaOrdenBinding enlace;
     private NuevaOrdenViewModel viewModel;
 
     private Cliente clienteSeleccionado = null;
-    private final List<Cliente>          listaClientes        = new ArrayList<>();
+    private Call<DNIRespuesta> llamadaDNI;
     private final List<ServicioCatalogo> serviciosSeleccionados = new ArrayList<>();
     private final Set<Integer>           idsSeleccionados     = new HashSet<>();
 
@@ -73,7 +77,7 @@ public class FragmentoNuevaOrden extends Fragment
 
         ajustarPaddingConTeclado();
         forzarMayusculas();
-        configurarBuscadorCliente();
+        configurarBusquedaDni();
         configurarChipsEquipo();
         configurarChipsPrioridad();
         configurarChipsAccesorios();
@@ -83,13 +87,6 @@ public class FragmentoNuevaOrden extends Fragment
         observarViewModel();
 
         viewModel.cargarCatalogo(empresaId);
-    }
-
-    @Override
-    public void alCrearCliente(Cliente cliente) {
-        clienteSeleccionado = cliente;
-        enlace.campoCliente.setText(cliente.getNombreCompleto());
-        enlace.layoutCliente.setError(null);
     }
 
     // ── Configuración de UI ───────────────────────────────────────────
@@ -113,24 +110,161 @@ public class FragmentoNuevaOrden extends Fragment
         enlace.campoContrasena.setFilters(filtro);
     }
 
-    private void configurarBuscadorCliente() {
-        enlace.campoCliente.addTextChangedListener(new TextWatcher() {
+    private void configurarBusquedaDni() {
+        enlace.campoDniBusqueda.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int i, int c, int a) {}
             @Override public void afterTextChanged(Editable e) {}
             @Override
-            public void onTextChanged(CharSequence texto, int i, int a, int c) {
-                if (texto.length() >= 2) viewModel.buscarClientes(empresaId, texto.toString());
-                if (texto.length() == 0) clienteSeleccionado = null;
+            public void onTextChanged(CharSequence texto, int start, int before, int count) {
+                String dni = texto.toString().trim();
+                if (dni.length() == 8) {
+                    viewModel.buscarClientePorDni(empresaId, dni);
+                } else {
+                    ocultarPanelesResultado();
+                }
             }
         });
-        enlace.campoCliente.setOnItemClickListener((parent, v, pos, id) -> {
-            if (pos < listaClientes.size()) {
-                clienteSeleccionado = listaClientes.get(pos);
-                enlace.campoCliente.setText(clienteSeleccionado.getNombreCompleto());
-                enlace.layoutCliente.setError(null);
+
+        enlace.botonSeleccionarCliente.setOnClickListener(v -> {
+            Cliente c = viewModel.clienteEncontrado.getValue();
+            if (c != null) seleccionarCliente(c);
+        });
+
+        enlace.botonRegistrarCliente.setOnClickListener(v -> {
+            if (validarCamposNuevoCliente()) registrarNuevoCliente();
+        });
+
+        enlace.botonEditarTelefono.setOnClickListener(v -> mostrarDialogoEditarTelefono());
+
+        enlace.botonCambiarCliente.setOnClickListener(v -> {
+            if (llamadaDNI != null) { llamadaDNI.cancel(); llamadaDNI = null; }
+            clienteSeleccionado = null;
+            viewModel.clienteEncontrado.setValue(null);
+            viewModel.clienteNoEncontrado.setValue(false);
+            enlace.contenedorClienteSeleccionado.setVisibility(View.GONE);
+            enlace.layoutDniBusqueda.setVisibility(View.VISIBLE);
+            enlace.campoDniBusqueda.setText("");
+            ocultarPanelesResultado();
+        });
+    }
+
+    private void consultarDniApi(String dni) {
+        if (llamadaDNI != null) llamadaDNI.cancel();
+        enlace.progressBuscandoCliente.setVisibility(View.VISIBLE);
+        enlace.campoNombreNuevo.setText("");
+        enlace.campoApellidoNuevo.setText("");
+
+        llamadaDNI = ApiDNICliente.obtenerServicio().consultar(dni, BuildConfig.DNI_API_TOKEN);
+        llamadaDNI.enqueue(new Callback<DNIRespuesta>() {
+            @Override
+            public void onResponse(@NonNull Call<DNIRespuesta> call,
+                                   @NonNull Response<DNIRespuesta> respuesta) {
+                if (enlace == null || !isAdded()) return;
+                enlace.progressBuscandoCliente.setVisibility(View.GONE);
+                if (respuesta.isSuccessful() && respuesta.body() != null) {
+                    DNIRespuesta datos = respuesta.body();
+                    if (datos.getNombres() != null)
+                        enlace.campoNombreNuevo.setText(datos.getNombres());
+                    String apellido = "";
+                    if (datos.getApellidoPaterno() != null)
+                        apellido = datos.getApellidoPaterno();
+                    if (datos.getApellidoMaterno() != null && !datos.getApellidoMaterno().isEmpty())
+                        apellido += (apellido.isEmpty() ? "" : " ") + datos.getApellidoMaterno();
+                    if (!apellido.isEmpty())
+                        enlace.campoApellidoNuevo.setText(apellido);
+                    enlace.campoTelefonoNuevo.requestFocus();
+                }
+            }
+            @Override
+            public void onFailure(@NonNull Call<DNIRespuesta> call, @NonNull Throwable t) {
+                if (enlace == null || !isAdded() || call.isCanceled()) return;
+                enlace.progressBuscandoCliente.setVisibility(View.GONE);
             }
         });
-        enlace.botonNuevoCliente.setOnClickListener(v -> mostrarDialogoNuevoCliente());
+    }
+
+    private void ocultarPanelesResultado() {
+        enlace.progressBuscandoCliente.setVisibility(View.GONE);
+        enlace.cardClienteEncontrado.setVisibility(View.GONE);
+        enlace.contenedorRegistroCliente.setVisibility(View.GONE);
+    }
+
+    private void seleccionarCliente(Cliente cliente) {
+        clienteSeleccionado = cliente;
+        enlace.textNombreClienteSel.setText(cliente.getNombreCompleto());
+        enlace.textTelefonoClienteSel.setText(
+                cliente.getTelefono() != null ? cliente.getTelefono() : "Sin teléfono");
+        enlace.layoutDniBusqueda.setVisibility(View.GONE);
+        enlace.contenedorClienteSeleccionado.setVisibility(View.VISIBLE);
+        ocultarPanelesResultado();
+        enlace.layoutDniBusqueda.setError(null);
+    }
+
+    private void mostrarDialogoEditarTelefono() {
+        if (clienteSeleccionado == null) return;
+
+        View vista = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialogo_editar_telefono, null);
+        com.google.android.material.textfield.TextInputEditText inputTel =
+                vista.findViewById(R.id.campo_nuevo_telefono);
+
+        String telActual = clienteSeleccionado.getTelefono();
+        if (telActual != null) {
+            inputTel.setText(telActual);
+            inputTel.setSelection(telActual.length());
+        }
+
+        androidx.appcompat.app.AlertDialog dialogo = new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                .setTitle(getString(R.string.titulo_editar_telefono))
+                .setView(vista)
+                .setPositiveButton(getString(R.string.btn_aplicar), (dialog, which) -> {
+                    String nuevoTel = inputTel.getText().toString().trim();
+                    if (!nuevoTel.isEmpty()) {
+                        clienteSeleccionado.setTelefono(nuevoTel);
+                        enlace.textTelefonoClienteSel.setText(nuevoTel);
+                        if (clienteSeleccionado.getId() > 0)
+                            viewModel.actualizarTelefonoCliente(clienteSeleccionado.getId(), nuevoTel);
+                    }
+                })
+                .setNegativeButton(getString(R.string.btn_cancelar), null)
+                .create();
+
+        dialogo.getWindow().setBackgroundDrawable(
+                new android.graphics.drawable.ColorDrawable(
+                        androidx.core.content.ContextCompat.getColor(requireContext(), R.color.fondo_tarjeta)));
+        dialogo.show();
+    }
+
+    private boolean validarCamposNuevoCliente() {
+        boolean valido = true;
+        if (enlace.campoNombreNuevo.getText().toString().trim().isEmpty()) {
+            enlace.layoutNombreNuevo.setError(getString(R.string.error_nombre_vacio));
+            valido = false;
+        } else {
+            enlace.layoutNombreNuevo.setError(null);
+        }
+        if (enlace.campoTelefonoNuevo.getText().toString().trim().isEmpty()) {
+            enlace.layoutTelefonoNuevo.setError(getString(R.string.error_telefono_vacio));
+            valido = false;
+        } else {
+            enlace.layoutTelefonoNuevo.setError(null);
+        }
+        return valido;
+    }
+
+    private void registrarNuevoCliente() {
+        Map<String, Object> datos = new HashMap<>();
+        datos.put("empresa_id", empresaId);
+        datos.put("nombre",    enlace.campoNombreNuevo.getText().toString().trim());
+        datos.put("apellido",  enlace.campoApellidoNuevo.getText().toString().trim());
+        datos.put("telefono",  enlace.campoTelefonoNuevo.getText().toString().trim());
+        String dni = enlace.campoDniBusqueda.getText().toString().trim();
+        if (!dni.isEmpty()) datos.put("dni", dni);
+        String email = enlace.campoEmailNuevo.getText().toString().trim();
+        if (!email.isEmpty()) datos.put("email", email);
+        String dir = enlace.campoDireccionNuevo.getText().toString().trim();
+        if (!dir.isEmpty()) datos.put("direccion", dir);
+        viewModel.registrarCliente(datos);
     }
 
     private void configurarChipsEquipo() {
@@ -298,16 +432,42 @@ public class FragmentoNuevaOrden extends Fragment
     }
 
     private void observarViewModel() {
-        viewModel.clientesSugeridos.observe(getViewLifecycleOwner(), clientes -> {
-            listaClientes.clear();
-            listaClientes.addAll(clientes);
-            List<String> sugerencias = new ArrayList<>();
-            for (Cliente c : clientes) sugerencias.add(c.getTextoAutocompletado());
-            enlace.campoCliente.setAdapter(new ArrayAdapter<>(
-                    requireContext(),
-                    android.R.layout.simple_dropdown_item_1line,
-                    sugerencias));
-            if (!sugerencias.isEmpty()) enlace.campoCliente.showDropDown();
+        viewModel.buscandoDni.observe(getViewLifecycleOwner(), buscando -> {
+            boolean cargando = Boolean.TRUE.equals(buscando);
+            enlace.progressBuscandoCliente.setVisibility(cargando ? View.VISIBLE : View.GONE);
+        });
+
+        viewModel.clienteEncontrado.observe(getViewLifecycleOwner(), cliente -> {
+            if (cliente != null) {
+                enlace.textNombreClienteEncontrado.setText(cliente.getNombreCompleto());
+                String tel = cliente.getTelefono() != null ? cliente.getTelefono() : "Sin teléfono";
+                enlace.textTelefonoClienteEncontrado.setText(tel);
+                enlace.cardClienteEncontrado.setVisibility(View.VISIBLE);
+                enlace.contenedorRegistroCliente.setVisibility(View.GONE);
+            }
+        });
+
+        viewModel.clienteNoEncontrado.observe(getViewLifecycleOwner(), noEncontrado -> {
+            if (Boolean.TRUE.equals(noEncontrado)) {
+                enlace.cardClienteEncontrado.setVisibility(View.GONE);
+                enlace.contenedorRegistroCliente.setVisibility(View.VISIBLE);
+                String dni = enlace.campoDniBusqueda.getText().toString().trim();
+                if (dni.length() == 8) consultarDniApi(dni);
+            }
+        });
+
+        viewModel.registrandoCliente.observe(getViewLifecycleOwner(), registrando -> {
+            boolean cargando = Boolean.TRUE.equals(registrando);
+            enlace.progressBuscandoCliente.setVisibility(cargando ? View.VISIBLE : View.GONE);
+            enlace.botonRegistrarCliente.setEnabled(!cargando);
+        });
+
+        viewModel.clienteCreadoRegistrado.observe(getViewLifecycleOwner(), cliente -> {
+            if (cliente != null) {
+                seleccionarCliente(cliente);
+                MensajeUtils.mostrar(requireContext(), getString(R.string.msg_cliente_guardado));
+                viewModel.clienteCreadoRegistrado.setValue(null);
+            }
         });
 
         viewModel.guardando.observe(getViewLifecycleOwner(), g -> {
@@ -341,10 +501,10 @@ public class FragmentoNuevaOrden extends Fragment
     private boolean validarFormulario() {
         boolean valido = true;
         if (clienteSeleccionado == null) {
-            enlace.layoutCliente.setError(getString(R.string.error_selecciona_cliente));
+            enlace.layoutDniBusqueda.setError(getString(R.string.error_selecciona_cliente));
             valido = false;
         } else {
-            enlace.layoutCliente.setError(null);
+            enlace.layoutDniBusqueda.setError(null);
         }
         if (enlace.campoMarca.getText().toString().trim().isEmpty()) {
             enlace.layoutMarca.setError(getString(R.string.error_ingresa_marca));
@@ -389,13 +549,19 @@ public class FragmentoNuevaOrden extends Fragment
                 new ArrayList<>(serviciosSeleccionados));
     }
 
-    private void mostrarDialogoNuevoCliente() {
-        DialogoNuevoCliente dialogo = DialogoNuevoCliente.nuevaInstancia(empresaId);
-        dialogo.show(getParentFragmentManager(), "nuevo_cliente");
-    }
-
     private void limpiarFormulario() {
-        enlace.campoCliente.setText("");
+        clienteSeleccionado = null;
+        enlace.campoDniBusqueda.setText("");
+        enlace.campoNombreNuevo.setText("");
+        enlace.campoApellidoNuevo.setText("");
+        enlace.campoTelefonoNuevo.setText("");
+        enlace.campoEmailNuevo.setText("");
+        enlace.campoDireccionNuevo.setText("");
+        enlace.layoutDniBusqueda.setVisibility(View.VISIBLE);
+        enlace.contenedorClienteSeleccionado.setVisibility(View.GONE);
+        ocultarPanelesResultado();
+        viewModel.clienteEncontrado.setValue(null);
+        viewModel.clienteNoEncontrado.setValue(false);
         enlace.campoMarca.setText("");
         enlace.campoModelo.setText("");
         enlace.campoSerie.setText("");
@@ -406,7 +572,6 @@ public class FragmentoNuevaOrden extends Fragment
         enlace.chipLaptop.setChecked(true);
         enlace.chipNormal.setChecked(true);
         enlace.chipGroupAccesorios.clearCheck();
-        clienteSeleccionado = null;
         accesorios.clear();
         serviciosSeleccionados.clear();
         idsSeleccionados.clear();
@@ -417,6 +582,7 @@ public class FragmentoNuevaOrden extends Fragment
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        if (llamadaDNI != null) { llamadaDNI.cancel(); llamadaDNI = null; }
         enlace = null;
     }
 }

@@ -32,6 +32,20 @@
         <item name="android:textColorPrimary">@color/md_theme_onBackground</item>
         <item name="android:textColorSecondary">@color/md_theme_onSurfaceVariant</item>
         <item name="colorControlHighlight">#33E85D5D</item>
+        <item name="materialAlertDialogTheme">@style/EstiloDialogoOscuro</item>
+    </style>
+
+    <!-- Diálogo con fondo oscuro — aplica a todos los MaterialAlertDialogBuilder -->
+    <style name="EstiloDialogoOscuro" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorSurface">@color/fondo_tarjeta</item>
+        <item name="colorOnSurface">@color/texto_principal</item>
+        <item name="colorOnSurfaceVariant">@color/texto_secundario</item>
+        <item name="colorSurfaceContainer">@color/fondo_tarjeta</item>
+        <item name="colorSurfaceContainerHigh">@color/fondo_tarjeta</item>
+        <item name="colorSurfaceContainerHighest">@color/fondo_tarjeta</item>
+        <item name="android:colorBackground">@color/fondo_tarjeta</item>
+        <item name="android:textColorPrimary">@color/texto_principal</item>
+        <item name="android:textColorSecondary">@color/texto_secundario</item>
     </style>
 
     <!-- Campo de texto -->

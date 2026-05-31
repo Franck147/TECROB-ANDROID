@@ -20,32 +20,84 @@ import retrofit2.Response;
 
 public class NuevaOrdenViewModel extends ViewModel {
 
-    public final MutableLiveData<List<Cliente>>         clientesSugeridos  = new MutableLiveData<>(new ArrayList<>());
-    public final MutableLiveData<List<ServicioCatalogo>> catalogoDisponible = new MutableLiveData<>(new ArrayList<>());
-    public final MutableLiveData<Boolean>               guardando          = new MutableLiveData<>(false);
-    public final MutableLiveData<Boolean>               ordenGuardada      = new MutableLiveData<>();
-    public final MutableLiveData<String>                error              = new MutableLiveData<>();
+    public final MutableLiveData<List<ServicioCatalogo>> catalogoDisponible     = new MutableLiveData<>(new ArrayList<>());
+    public final MutableLiveData<Boolean>               guardando              = new MutableLiveData<>(false);
+    public final MutableLiveData<Boolean>               ordenGuardada          = new MutableLiveData<>();
+    public final MutableLiveData<String>                error                  = new MutableLiveData<>();
+    public final MutableLiveData<Cliente>               clienteEncontrado      = new MutableLiveData<>();
+    public final MutableLiveData<Boolean>               clienteNoEncontrado    = new MutableLiveData<>(false);
+    public final MutableLiveData<Boolean>               buscandoDni            = new MutableLiveData<>(false);
+    public final MutableLiveData<Cliente>               clienteCreadoRegistrado = new MutableLiveData<>();
+    public final MutableLiveData<Boolean>               registrandoCliente     = new MutableLiveData<>(false);
 
     private final ClienteRepository  clienteRepo  = new ClienteRepository();
     private final OrdenRepository    ordenRepo    = new OrdenRepository();
     private final ServicioRepository servicioRepo = new ServicioRepository();
 
-    public void buscarClientes(int empresaId, String texto) {
-        if (texto == null || texto.length() < 2) {
-            clientesSugeridos.setValue(new ArrayList<>());
-            return;
-        }
-        clienteRepo.buscarClientes(empresaId, texto,
-                new Callback<List<Cliente>>() {
-                    @Override
-                    public void onResponse(@NonNull Call<List<Cliente>> c,
-                                           @NonNull Response<List<Cliente>> r) {
-                        if (r.isSuccessful() && r.body() != null)
-                            clientesSugeridos.postValue(r.body());
+    public void buscarClientePorDni(int empresaId, String dni) {
+        buscandoDni.setValue(true);
+        clienteEncontrado.setValue(null);
+        clienteNoEncontrado.setValue(false);
+        clienteRepo.buscarClientePorDni(empresaId, dni, new Callback<List<Cliente>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<Cliente>> c,
+                                   @NonNull Response<List<Cliente>> r) {
+                buscandoDni.postValue(false);
+                if (r.isSuccessful() && r.body() != null && !r.body().isEmpty()) {
+                    clienteEncontrado.postValue(r.body().get(0));
+                } else {
+                    clienteNoEncontrado.postValue(true);
+                }
+            }
+            @Override
+            public void onFailure(@NonNull Call<List<Cliente>> c, @NonNull Throwable e) {
+                buscandoDni.postValue(false);
+                clienteNoEncontrado.postValue(true);
+            }
+        });
+    }
+
+    public void actualizarTelefonoCliente(int clienteId, String nuevoTelefono) {
+        Map<String, Object> datos = new HashMap<>();
+        datos.put("telefono", nuevoTelefono);
+        clienteRepo.actualizarCliente(clienteId, datos, new Callback<Void>() {
+            @Override
+            public void onResponse(@NonNull Call<Void> c, @NonNull Response<Void> r) {}
+            @Override
+            public void onFailure(@NonNull Call<Void> c, @NonNull Throwable e) {}
+        });
+    }
+
+    public void registrarCliente(Map<String, Object> datos) {
+        registrandoCliente.setValue(true);
+        final String nombre   = datos.get("nombre")   != null ? String.valueOf(datos.get("nombre"))   : "";
+        final String apellido = datos.get("apellido") != null ? String.valueOf(datos.get("apellido")) : "";
+        final String telefono = datos.get("telefono") != null ? String.valueOf(datos.get("telefono")) : "";
+        final String dni      = datos.get("dni")      != null ? String.valueOf(datos.get("dni"))      : "";
+        clienteRepo.crearCliente(datos, new Callback<Cliente>() {
+            @Override
+            public void onResponse(@NonNull Call<Cliente> c, @NonNull Response<Cliente> r) {
+                registrandoCliente.postValue(false);
+                if (r.code() == 201 || r.isSuccessful()) {
+                    Cliente resultado = r.body();
+                    if (resultado == null) {
+                        resultado = new Cliente();
+                        resultado.setNombre(nombre);
+                        resultado.setApellido(apellido);
+                        resultado.setTelefono(telefono);
+                        if (!dni.isEmpty()) resultado.setDni(dni);
                     }
-                    @Override
-                    public void onFailure(@NonNull Call<List<Cliente>> c, @NonNull Throwable e) {}
-                });
+                    clienteCreadoRegistrado.postValue(resultado);
+                } else {
+                    error.postValue("Error al registrar el cliente");
+                }
+            }
+            @Override
+            public void onFailure(@NonNull Call<Cliente> c, @NonNull Throwable e) {
+                registrandoCliente.postValue(false);
+                error.postValue("Sin conexión a internet");
+            }
+        });
     }
 
     public void cargarCatalogo(int empresaId) {

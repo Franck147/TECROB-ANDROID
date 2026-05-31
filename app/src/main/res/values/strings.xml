@@ -47,6 +47,14 @@
     <string name="seccion_accesorios">Accesorios incluidos</string>
     <string name="hint_buscar_cliente">Buscar cliente por nombre o teléfono…</string>
     <string name="btn_nuevo_cliente">+ Registrar nuevo cliente</string>
+    <string name="hint_buscar_dni">DNI del cliente (8 dígitos)</string>
+    <string name="lbl_cliente_encontrado">Cliente encontrado</string>
+    <string name="btn_seleccionar_cliente">Seleccionar este cliente</string>
+    <string name="lbl_cliente_no_encontrado">No se encontró ningún cliente con ese DNI. Registra uno nuevo:</string>
+    <string name="btn_registrar_cliente">Registrar cliente</string>
+    <string name="btn_cambiar_cliente">Cambiar</string>
+    <string name="btn_editar_telefono">Editar tel.</string>
+    <string name="titulo_editar_telefono">Editar teléfono</string>
     <string name="hint_marca">Marca *</string>
     <string name="hint_modelo">Modelo</string>
     <string name="hint_serie">Número de serie</string>
@@ -103,6 +111,7 @@
     <string name="btn_confirmar">Confirmar y enviar</string>
     <string name="btn_volver">Volver</string>
     <string name="btn_aceptar">Aceptar</string>
+    <string name="btn_aplicar">Aplicar</string>
     <string name="dialogo_marcar_lista_titulo">Marcar orden como lista</string>
     <string name="dialogo_cambiar_estado_titulo">Cambiar estado</string>
     <string name="msg_estado_actualizado">Estado actualizado correctamente</string>

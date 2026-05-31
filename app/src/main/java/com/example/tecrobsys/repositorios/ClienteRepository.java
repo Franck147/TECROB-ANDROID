@@ -32,6 +32,26 @@ public class ClienteRepository {
     }
 
     /**
+     * Busca un cliente por DNI exacto.
+     */
+    public void buscarClientePorDni(int empresaId, String dni,
+                                     Callback<List<Cliente>> callback) {
+        SupabaseCliente.obtenerServicio()
+                .buscarClientePorDni("eq." + empresaId, "eq." + dni)
+                .enqueue(callback);
+    }
+
+    /**
+     * Actualiza campos de un cliente existente.
+     */
+    public void actualizarCliente(int clienteId, Map<String, Object> datos,
+                                   Callback<Void> callback) {
+        SupabaseCliente.obtenerServicio()
+                .actualizarCliente("eq." + clienteId, datos)
+                .enqueue(callback);
+    }
+
+    /**
      * Crea un nuevo cliente en la base de datos.
      *
      * @param datos    Mapa con los campos del cliente

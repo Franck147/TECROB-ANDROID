@@ -79,6 +79,19 @@ public interface SupabaseServicio {
             @Query("or") String filtroOr
     );
 
+    @GET("cliente")
+    Call<List<Cliente>> buscarClientePorDni(
+            @Query("empresa_id") String empresaIdFiltro,
+            @Query("dni") String dniFiltro
+    );
+
+    @PATCH("cliente")
+    @Headers("Prefer: return=minimal")
+    Call<Void> actualizarCliente(
+            @Query("id") String idFiltro,
+            @Body Map<String, Object> datos
+    );
+
     @POST("cliente")
     @Headers("Accept: application/vnd.pgrst.object+json")
     Call<Cliente> crearCliente(@Body Map<String, Object> datosCliente);
