@@ -191,4 +191,7 @@
     <string name="lbl_subtotal_servicios">Subtotal servicios:</string>
     <string name="titulo_seleccionar_servicios">Seleccionar servicios</string>
     <string name="msg_sin_catalogo">No hay servicios disponibles</string>
+    <string name="btn_nuevo_servicio">+ Nuevo servicio</string>
+    <string name="titulo_nuevo_servicio">Nuevo servicio</string>
+    <string name="msg_servicio_creado">Servicio creado y agregado a la orden</string>
 </resources>

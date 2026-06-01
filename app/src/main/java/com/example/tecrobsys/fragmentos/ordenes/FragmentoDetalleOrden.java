@@ -158,7 +158,7 @@ public class FragmentoDetalleOrden extends Fragment {
         // Llamar al cliente
         enlace.botonLlamar.setOnClickListener(v ->
                 startActivity(new Intent(Intent.ACTION_DIAL,
-                        Uri.parse("tel:" + telefono))));
+                        Uri.parse("tel:+" + agregarPrefijoPeru(telefono)))));
 
         // Abrir WhatsApp
         enlace.botonWhatsapp.setOnClickListener(v -> abrirWhatsApp(telefono, ""));
@@ -198,11 +198,17 @@ public class FragmentoDetalleOrden extends Fragment {
         enlace.botonRegistrarPago.setOnClickListener(v -> mostrarDialogoPago());
     }
 
+    private String agregarPrefijoPeru(String telefono) {
+        String numero = telefono.replaceAll("[^\\d]", "");
+        if (numero.startsWith("51") && numero.length() >= 11) return numero;
+        return "51" + numero;
+    }
+
     private void abrirWhatsApp(String telefono, String mensaje) {
-        String numero = telefono.replaceAll("[^\\d+]", "");
+        String numero = agregarPrefijoPeru(telefono);
         try {
-            String url = "https://api.whatsapp.com/send?phone=" + numero;
-            if (!mensaje.isEmpty()) url += "&text=" + Uri.encode(mensaje);
+            String url = "https://wa.me/" + numero;
+            if (!mensaje.isEmpty()) url += "?text=" + Uri.encode(mensaje);
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
         } catch (Exception e) {
             mostrarSnackbar(getString(R.string.msg_whatsapp_no_disponible));

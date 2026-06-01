@@ -1,14 +1,21 @@
 package com.example.tecrobsys.fragmentos.nueva_orden;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputFilter;
+import android.text.InputType;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import androidx.appcompat.app.AlertDialog;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.TextView;
+import com.google.android.material.button.MaterialButton;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
@@ -17,6 +24,8 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.datepicker.MaterialDatePicker;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.example.tecrobsys.utils.MensajeUtils;
 import com.example.tecrobsys.BuildConfig;
 import com.example.tecrobsys.R;
@@ -49,6 +58,14 @@ public class FragmentoNuevaOrden extends Fragment {
     private Call<DNIRespuesta> llamadaDNI;
     private final List<ServicioCatalogo> serviciosSeleccionados = new ArrayList<>();
     private final Set<Integer>           idsSeleccionados     = new HashSet<>();
+    private final Set<Integer>           seleccionAnterior    = new HashSet<>();
+
+    private static final String[] CATEGORIAS_VALOR    = {
+            "mantenimiento", "reparacion", "software", "repuesto", "diagnostico", "otro"
+    };
+    private static final String[] CATEGORIAS_ETIQUETA = {
+            "Mantenimiento", "Reparación", "Software", "Repuesto", "Diagnóstico", "Otro"
+    };
 
     private String tipoEquipo    = "laptop";
     private String prioridad     = "normal";
@@ -339,6 +356,10 @@ public class FragmentoNuevaOrden extends Fragment {
     }
 
     private void mostrarDialogoServicios() {
+        mostrarDialogoServiciosConSeleccion(idsSeleccionados);
+    }
+
+    private void mostrarDialogoServiciosConSeleccion(Set<Integer> previos) {
         List<ServicioCatalogo> catalogo = viewModel.catalogoDisponible.getValue();
         if (catalogo == null || catalogo.isEmpty()) {
             MensajeUtils.mostrar(requireContext(), getString(R.string.msg_sin_catalogo));
@@ -350,27 +371,183 @@ public class FragmentoNuevaOrden extends Fragment {
         for (int i = 0; i < catalogo.size(); i++) {
             ServicioCatalogo s = catalogo.get(i);
             etiquetas[i] = s.getNombre() + "  —  " + s.getPrecioFormateado();
-            marcados[i]  = idsSeleccionados.contains(s.getId());
+            marcados[i]  = previos.contains(s.getId());
         }
 
-        // Copia temporal para cambios en el diálogo
-        Set<Integer> seleccionTemp = new HashSet<>(idsSeleccionados);
+        Set<Integer> seleccionTemp = new HashSet<>(previos);
+        int dp = (int) getResources().getDisplayMetrics().density;
+
+        // Lista con checkboxes
+        ListView lista = new ListView(requireContext());
+        lista.setAdapter(new ArrayAdapter<>(requireContext(),
+                android.R.layout.simple_list_item_multiple_choice, etiquetas));
+        lista.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+        for (int i = 0; i < marcados.length; i++) lista.setItemChecked(i, marcados[i]);
+        lista.setOnItemClickListener((parent, v, pos, id) -> {
+            if (lista.isItemChecked(pos)) seleccionTemp.add(catalogo.get(pos).getId());
+            else                          seleccionTemp.remove(catalogo.get(pos).getId());
+        });
+        LinearLayout.LayoutParams listaParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f);
+        lista.setLayoutParams(listaParams);
+
+        // Fila de botones horizontal
+        LinearLayout filaBotones = new LinearLayout(requireContext());
+        filaBotones.setOrientation(LinearLayout.HORIZONTAL);
+        filaBotones.setPadding(8 * dp, 8 * dp, 8 * dp, 8 * dp);
+
+        MaterialButton btnCancelar = new MaterialButton(requireContext(), null,
+                com.google.android.material.R.attr.materialButtonOutlinedStyle);
+        btnCancelar.setText(getString(R.string.btn_cancelar));
+        LinearLayout.LayoutParams p1 = new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        p1.setMargins(0, 0, 4 * dp, 0);
+        btnCancelar.setLayoutParams(p1);
+
+        MaterialButton btnNuevo = new MaterialButton(requireContext(), null,
+                com.google.android.material.R.attr.materialButtonOutlinedStyle);
+        btnNuevo.setText(getString(R.string.btn_nuevo_servicio));
+        LinearLayout.LayoutParams p2 = new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        p2.setMargins(4 * dp, 0, 4 * dp, 0);
+        btnNuevo.setLayoutParams(p2);
+
+        MaterialButton btnAceptar = new MaterialButton(requireContext());
+        btnAceptar.setText(getString(R.string.btn_aceptar));
+        LinearLayout.LayoutParams p3 = new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        p3.setMargins(4 * dp, 0, 0, 0);
+        btnAceptar.setLayoutParams(p3);
+
+        filaBotones.addView(btnCancelar);
+        filaBotones.addView(btnNuevo);
+        filaBotones.addView(btnAceptar);
+
+        LinearLayout contenedor = new LinearLayout(requireContext());
+        contenedor.setOrientation(LinearLayout.VERTICAL);
+        contenedor.addView(lista);
+        contenedor.addView(filaBotones);
+
+        AlertDialog dialog = new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                .setTitle(getString(R.string.titulo_seleccionar_servicios))
+                .setView(contenedor)
+                .create();
+
+        btnCancelar.setOnClickListener(v -> dialog.dismiss());
+
+        btnNuevo.setOnClickListener(v -> {
+            dialog.dismiss();
+            seleccionAnterior.clear();
+            seleccionAnterior.addAll(seleccionTemp);
+            mostrarDialogoCrearServicio();
+        });
+
+        btnAceptar.setOnClickListener(v -> {
+            dialog.dismiss();
+            idsSeleccionados.clear();
+            idsSeleccionados.addAll(seleccionTemp);
+            serviciosSeleccionados.clear();
+            for (ServicioCatalogo s : catalogo) {
+                if (idsSeleccionados.contains(s.getId()))
+                    serviciosSeleccionados.add(s);
+            }
+            actualizarVistaServicios();
+        });
+
+        dialog.show();
+    }
+
+    private void mostrarDialogoCrearServicio() {
+        int empresaId = SesionManager.obtenerInstancia(requireContext()).obtenerEmpresaId();
+
+        android.content.Context ctxClaro = new android.view.ContextThemeWrapper(
+                requireContext(),
+                com.google.android.material.R.style.Theme_Material3_Light_NoActionBar);
+
+        LinearLayout contenedor = new LinearLayout(ctxClaro);
+        contenedor.setOrientation(LinearLayout.VERTICAL);
+        int dp = (int) getResources().getDisplayMetrics().density;
+        contenedor.setPadding(16 * dp, 16 * dp, 16 * dp, 16 * dp);
+
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.topMargin = 8 * dp;
+
+        TextInputLayout layoutNombre = new TextInputLayout(ctxClaro, null,
+                com.google.android.material.R.attr.textInputOutlinedStyle);
+        layoutNombre.setHint("Nombre del servicio *");
+        TextInputEditText campoNombre = new TextInputEditText(ctxClaro);
+        campoNombre.setTextColor(Color.BLACK);
+        layoutNombre.addView(campoNombre);
+        contenedor.addView(layoutNombre);
+
+        TextInputLayout layoutPrecio = new TextInputLayout(ctxClaro, null,
+                com.google.android.material.R.attr.textInputOutlinedStyle);
+        layoutPrecio.setHint("Precio base (S/) *");
+        TextInputEditText campoPrecio = new TextInputEditText(ctxClaro);
+        campoPrecio.setTextColor(Color.BLACK);
+        campoPrecio.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        layoutPrecio.addView(campoPrecio);
+        layoutPrecio.setLayoutParams(params);
+        contenedor.addView(layoutPrecio);
+
+        TextInputLayout layoutCategoria = new TextInputLayout(ctxClaro, null,
+                com.google.android.material.R.attr.textInputOutlinedExposedDropdownMenuStyle);
+        layoutCategoria.setHint("Categoría *");
+        AutoCompleteTextView campoCategoria = new AutoCompleteTextView(ctxClaro);
+        campoCategoria.setTextColor(Color.BLACK);
+        campoCategoria.setFocusable(false);
+        campoCategoria.setAdapter(new ArrayAdapter<>(ctxClaro,
+                android.R.layout.simple_dropdown_item_1line, CATEGORIAS_ETIQUETA));
+        layoutCategoria.addView(campoCategoria);
+        layoutCategoria.setLayoutParams(params);
+        contenedor.addView(layoutCategoria);
+
+        TextInputLayout layoutDesc = new TextInputLayout(ctxClaro, null,
+                com.google.android.material.R.attr.textInputOutlinedStyle);
+        layoutDesc.setHint("Descripción (opcional)");
+        TextInputEditText campoDesc = new TextInputEditText(ctxClaro);
+        campoDesc.setTextColor(Color.BLACK);
+        layoutDesc.addView(campoDesc);
+        layoutDesc.setLayoutParams(params);
+        contenedor.addView(layoutDesc);
 
         new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
-                .setTitle(getString(R.string.titulo_seleccionar_servicios))
-                .setMultiChoiceItems(etiquetas, marcados, (dialog, which, checked) -> {
-                    if (checked) seleccionTemp.add(catalogo.get(which).getId());
-                    else         seleccionTemp.remove(catalogo.get(which).getId());
-                })
-                .setPositiveButton(getString(R.string.btn_aceptar), (d, w) -> {
-                    idsSeleccionados.clear();
-                    idsSeleccionados.addAll(seleccionTemp);
-                    serviciosSeleccionados.clear();
-                    for (ServicioCatalogo s : catalogo) {
-                        if (idsSeleccionados.contains(s.getId()))
-                            serviciosSeleccionados.add(s);
+                .setTitle(getString(R.string.titulo_nuevo_servicio))
+                .setView(contenedor)
+                .setPositiveButton(getString(R.string.btn_guardar_orden), (d, w) -> {
+                    String nombre    = campoNombre.getText().toString().trim();
+                    String precioStr = campoPrecio.getText().toString().trim();
+                    String catTexto  = campoCategoria.getText().toString().trim();
+                    String desc      = campoDesc.getText().toString().trim();
+
+                    if (nombre.isEmpty() || precioStr.isEmpty() || catTexto.isEmpty()) {
+                        MensajeUtils.mostrar(requireContext(), "Completa los campos obligatorios");
+                        return;
                     }
-                    actualizarVistaServicios();
+
+                    String catValor = "otro";
+                    for (int i = 0; i < CATEGORIAS_ETIQUETA.length; i++) {
+                        if (CATEGORIAS_ETIQUETA[i].equals(catTexto)) {
+                            catValor = CATEGORIAS_VALOR[i];
+                            break;
+                        }
+                    }
+
+                    double precio;
+                    try { precio = Double.parseDouble(precioStr); }
+                    catch (NumberFormatException e) { precio = 0.0; }
+
+                    Map<String, Object> datos = new HashMap<>();
+                    datos.put("nombre",      nombre);
+                    datos.put("precio_base", precio);
+                    datos.put("categoria",   catValor);
+                    datos.put("descripcion", desc);
+                    datos.put("empresa_id",  empresaId);
+                    datos.put("activo",      true);
+
+                    viewModel.crearServicio(empresaId, datos);
                 })
                 .setNegativeButton(getString(R.string.btn_cancelar), null)
                 .show();
@@ -493,6 +670,14 @@ public class FragmentoNuevaOrden extends Fragment {
                 MensajeUtils.mostrar(requireContext(), err);
                 viewModel.error.setValue(null);
             }
+        });
+
+        viewModel.servicioCreado.observe(getViewLifecycleOwner(), servicio -> {
+            if (servicio == null) return;
+            seleccionAnterior.add(servicio.getId());
+            MensajeUtils.mostrar(requireContext(), getString(R.string.msg_servicio_creado));
+            viewModel.servicioCreado.setValue(null);
+            mostrarDialogoServiciosConSeleccion(seleccionAnterior);
         });
     }
 

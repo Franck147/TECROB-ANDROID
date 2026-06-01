@@ -11,6 +11,7 @@ import com.example.tecrobsys.repositorios.ClienteRepository;
 import com.example.tecrobsys.repositorios.OrdenRepository;
 import com.example.tecrobsys.repositorios.ServicioRepository;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,8 @@ public class NuevaOrdenViewModel extends ViewModel {
     public final MutableLiveData<Boolean>               guardando              = new MutableLiveData<>(false);
     public final MutableLiveData<Boolean>               ordenGuardada          = new MutableLiveData<>();
     public final MutableLiveData<String>                error                  = new MutableLiveData<>();
+    public final MutableLiveData<ServicioCatalogo>      servicioCreado         = new MutableLiveData<>();
+    public final MutableLiveData<Boolean>               creandoServicio        = new MutableLiveData<>(false);
     public final MutableLiveData<Cliente>               clienteEncontrado      = new MutableLiveData<>();
     public final MutableLiveData<Boolean>               clienteNoEncontrado    = new MutableLiveData<>(false);
     public final MutableLiveData<Boolean>               buscandoDni            = new MutableLiveData<>(false);
@@ -95,6 +98,35 @@ public class NuevaOrdenViewModel extends ViewModel {
             @Override
             public void onFailure(@NonNull Call<Cliente> c, @NonNull Throwable e) {
                 registrandoCliente.postValue(false);
+                error.postValue("Sin conexión a internet");
+            }
+        });
+    }
+
+    public void crearServicio(int empresaId, Map<String, Object> datos) {
+        creandoServicio.setValue(true);
+        servicioRepo.agregarServicio(datos, new Callback<ServicioCatalogo>() {
+            @Override
+            public void onResponse(@NonNull Call<ServicioCatalogo> c,
+                                   @NonNull Response<ServicioCatalogo> r) {
+                creandoServicio.postValue(false);
+                if ((r.code() == 201 || r.isSuccessful()) && r.body() != null) {
+                    ServicioCatalogo nuevo = r.body();
+                    List<ServicioCatalogo> actual = catalogoDisponible.getValue();
+                    List<ServicioCatalogo> actualizado = actual != null
+                            ? new ArrayList<>(actual) : new ArrayList<>();
+                    actualizado.add(nuevo);
+                    Collections.sort(actualizado,
+                            (a, b) -> a.getNombre().compareToIgnoreCase(b.getNombre()));
+                    catalogoDisponible.postValue(actualizado);
+                    servicioCreado.postValue(nuevo);
+                } else {
+                    error.postValue("Error al crear el servicio");
+                }
+            }
+            @Override
+            public void onFailure(@NonNull Call<ServicioCatalogo> c, @NonNull Throwable e) {
+                creandoServicio.postValue(false);
                 error.postValue("Sin conexión a internet");
             }
         });
