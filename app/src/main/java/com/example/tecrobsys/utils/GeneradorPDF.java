@@ -1,337 +1,424 @@
 package com.example.tecrobsys.utils;
 
-import android.content.Context;
-import android.graphics.Canvas;
-import java.util.Locale;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.RectF;
-import android.graphics.Typeface;
+import android.app.Activity;
+import android.graphics.Picture;
 import android.graphics.pdf.PdfDocument;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.View;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import androidx.core.content.FileProvider;
+import com.example.tecrobsys.modelos.Equipo;
 import com.example.tecrobsys.modelos.ItemOrden;
 import com.example.tecrobsys.modelos.Orden;
 import java.io.File;
-import java.util.List;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
 
-/**
- * GeneradorPDF — Genera reportes PDF profesionales de órdenes de servicio.
- *
- * Usa la API nativa de Android (android.graphics.pdf.PdfDocument).
- * No requiere dependencias externas.
- *
- * Formato: A4 a 72dpi → 595 × 842 px
- *
- * IMPORTANTE: ejecutar en hilo secundario para no bloquear la UI.
- * El método generarOrden() es sincrónico (escribe el archivo en disco).
- */
 public class GeneradorPDF {
 
-    // ── Dimensiones de página (A4 a 72dpi) ───────────────────────────
-    private static final int PAGE_WIDTH  = 595;
-    private static final int PAGE_HEIGHT = 842;
-    private static final int MARGIN      = 40;
-    private static final int LINE_HEIGHT = 22;
+    public interface Callback {
+        void onDone(Uri uri);
+    }
 
-    // ── Colores corporativos ──────────────────────────────────────────
-    private static final int COLOR_ROJO      = Color.parseColor("#E85D5D");
-    private static final int COLOR_ROJO_DARK = Color.parseColor("#C43C3C");
-    private static final int COLOR_GRIS      = Color.parseColor("#555555");
-    private static final int COLOR_GRIS_CLARO= Color.parseColor("#EEEEEE");
-    private static final int COLOR_NEGRO     = Color.parseColor("#1A1A1A");
-    private static final int COLOR_BLANCO    = Color.WHITE;
+    private static final int A4_W  = 794;
+    private static final int A4_H  = 1123;
+    // Renderizar a 2× resolución para texto nítido; se escala al dibujar en el PDF
+    private static final int SCALE = 2;
 
-    /**
-     * Genera el PDF de una orden y retorna su URI para compartir.
-     *
-     * @param context Context de la aplicación (para acceder a filesDir y FileProvider)
-     * @param orden   Orden completa con cliente, equipo y totales
-     * @return Uri del PDF listo para compartir, o null si ocurrió un error
-     */
-    public static Uri generarOrden(Context context, Orden orden) {
-        PdfDocument document = new PdfDocument();
+    /** Genera el PDF de forma asíncrona. Debe llamarse desde el hilo principal. */
+    public static void generarOrden(Activity activity, Orden orden, Callback callback) {
+        WebView webView = new WebView(activity);
+        webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
 
-        try {
-            // Crear página A4
-            PdfDocument.PageInfo pageInfo =
-                    new PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, 1).create();
-            PdfDocument.Page page = document.startPage(pageInfo);
-            Canvas canvas = page.getCanvas();
+        WebSettings cfg = webView.getSettings();
+        cfg.setJavaScriptEnabled(false);
+        cfg.setDefaultTextEncodingName("UTF-8");
+        cfg.setUseWideViewPort(true);
+        cfg.setLoadWithOverviewMode(true);
 
-            // Dibujar contenido
-            int y = dibujarHeader(canvas, orden);
-            y = dibujarSeparador(canvas, y + 8);
-            y = dibujarSeccionCliente(canvas, orden, y + 16);
-            y = dibujarSeparador(canvas, y + 8);
-            y = dibujarSeccionEquipo(canvas, orden, y + 16);
-            y = dibujarSeparador(canvas, y + 8);
-            List<ItemOrden> items = orden.getItemsServicio();
-            if (items != null && !items.isEmpty()) {
-                y = dibujarSeccionServicios(canvas, items, y + 16);
-                y = dibujarSeparador(canvas, y + 8);
+        int renderW = A4_W * SCALE;
+        int renderH = A4_H * SCALE;
+        int wSpec = View.MeasureSpec.makeMeasureSpec(renderW, View.MeasureSpec.EXACTLY);
+        int hSpec = View.MeasureSpec.makeMeasureSpec(renderH, View.MeasureSpec.EXACTLY);
+        webView.measure(wSpec, hSpec);
+        webView.layout(0, 0, renderW, renderH);
+
+        File dir = new File(activity.getExternalFilesDir(null), "pdfs");
+        if (!dir.exists()) dir.mkdirs();
+        String nombre = "orden_" + (orden.getNumeroOrden() != null
+                ? orden.getNumeroOrden().replace("-", "_")
+                : String.valueOf(orden.getId())) + ".pdf";
+        File archivo = new File(dir, nombre);
+
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    view.measure(wSpec, hSpec);
+                    view.layout(0, 0, renderW, renderH);
+
+                    PdfDocument doc = new PdfDocument();
+                    PdfDocument.PageInfo info =
+                            new PdfDocument.PageInfo.Builder(A4_W, A4_H, 1).create();
+                    PdfDocument.Page page = doc.startPage(info);
+
+                    // Escalar el canvas a 1/SCALE para que el render 2× quede en tamaño A4
+                    page.getCanvas().scale(1.0f / SCALE, 1.0f / SCALE);
+                    Picture picture = view.capturePicture();
+                    picture.draw(page.getCanvas());
+                    doc.finishPage(page);
+
+                    try (FileOutputStream fos = new FileOutputStream(archivo)) {
+                        doc.writeTo(fos);
+                        doc.close();
+                        Uri uri = FileProvider.getUriForFile(
+                                activity,
+                                activity.getPackageName() + ".fileprovider",
+                                archivo);
+                        webView.destroy();
+                        callback.onDone(uri);
+                    } catch (IOException e) {
+                        doc.close();
+                        webView.destroy();
+                        callback.onDone(null);
+                    }
+                }, 600);
             }
-            y = dibujarTotales(canvas, orden, y + 16);
-            dibujarPiePagina(canvas);
+        });
 
-            document.finishPage(page);
-
-            // Guardar el archivo
-            File dir = new File(context.getExternalFilesDir(null), "pdfs");
-            if (!dir.exists()) dir.mkdirs();
-
-            String nombreArchivo = "orden_"
-                    + (orden.getNumeroOrden() != null
-                    ? orden.getNumeroOrden().replace("-", "_") : orden.getId())
-                    + ".pdf";
-            File archivo = new File(dir, nombreArchivo);
-
-            FileOutputStream fos = new FileOutputStream(archivo);
-            document.writeTo(fos);
-            fos.close();
-
-            // Retornar URI compartible via FileProvider
-            return FileProvider.getUriForFile(
-                    context,
-                    context.getPackageName() + ".fileprovider",
-                    archivo);
-
-        } catch (IOException e) {
-            return null;
-        } finally {
-            document.close();
-        }
+        webView.loadDataWithBaseURL(null,
+                construirHtml(orden), "text/html", "UTF-8", null);
     }
 
-    // ════════════════════════════════════════════════════════
-    //  Secciones del PDF
-    // ════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════════
+    //  HTML
+    // ════════════════════════════════════════════════════════════════
 
-    /**
-     * Header: círculo rojo con "T", nombre de empresa, número de orden.
-     * @return nueva posición Y después del header
-     */
-    private static int dibujarHeader(Canvas canvas, Orden orden) {
-        int y = MARGIN;
-
-        // Círculo rojo con logo "T"
-        Paint circulo = new Paint(Paint.ANTI_ALIAS_FLAG);
-        circulo.setColor(COLOR_ROJO);
-        circulo.setStyle(Paint.Style.FILL);
-        canvas.drawCircle(MARGIN + 24, y + 24, 24, circulo);
-
-        Paint logoTexto = new Paint(Paint.ANTI_ALIAS_FLAG);
-        logoTexto.setColor(COLOR_BLANCO);
-        logoTexto.setTextSize(28);
-        logoTexto.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
-        logoTexto.setTextAlign(Paint.Align.CENTER);
-        canvas.drawText("T", MARGIN + 24, y + 33, logoTexto);
-
-        // Nombre de empresa
-        Paint nombreEmpresa = new Paint(Paint.ANTI_ALIAS_FLAG);
-        nombreEmpresa.setColor(COLOR_NEGRO);
-        nombreEmpresa.setTextSize(16);
-        nombreEmpresa.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
-        canvas.drawText("TALLER TÉCNICO", MARGIN + 58, y + 18, nombreEmpresa);
-
-        Paint subEmpresa = new Paint(Paint.ANTI_ALIAS_FLAG);
-        subEmpresa.setColor(COLOR_GRIS);
-        subEmpresa.setTextSize(10);
-        canvas.drawText("TecrobSys — Sistema de Gestión", MARGIN + 58, y + 33, subEmpresa);
-
-        // Número de orden (alineado a la derecha)
-        Paint numOrden = new Paint(Paint.ANTI_ALIAS_FLAG);
-        numOrden.setColor(COLOR_ROJO);
-        numOrden.setTextSize(20);
-        numOrden.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
-        numOrden.setTextAlign(Paint.Align.RIGHT);
-        String numText = orden.getNumeroOrden() != null
+    private static String construirHtml(Orden orden) {
+        String numOrden = orden.getNumeroOrden() != null
                 ? "#" + orden.getNumeroOrden() : "#" + orden.getId();
-        canvas.drawText(numText, PAGE_WIDTH - MARGIN, y + 22, numOrden);
+        String fecha = UtilFecha.formatearFechaCorta(orden.getCreadoEn());
 
-        // Estado de la orden (debajo del número)
-        Paint estadoPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        estadoPaint.setColor(COLOR_GRIS);
-        estadoPaint.setTextSize(10);
-        estadoPaint.setTextAlign(Paint.Align.RIGHT);
-        canvas.drawText("Estado: " + UtilEstado.obtenerTexto(orden.getEstado()),
-                PAGE_WIDTH - MARGIN, y + 38, estadoPaint);
-
-        // Fecha de generación del PDF
-        Paint fecha = new Paint(Paint.ANTI_ALIAS_FLAG);
-        fecha.setColor(COLOR_GRIS);
-        fecha.setTextSize(9);
-        fecha.setTextAlign(Paint.Align.RIGHT);
-        canvas.drawText("Generado: " + UtilFecha.obtenerFechaHoy(),
-                PAGE_WIDTH - MARGIN, y + 52, fecha);
-
-        return y + 55;
+        return css()
+                + "<body>"
+                + encabezado(numOrden, fecha)
+                + seccionCliente(orden)
+                + seccionEquipo(orden)
+                + seccionServicio(orden)
+                + seccionFirma(orden)
+                + terminos()
+                + "</body></html>";
     }
 
-    /** Convierte texto a mayúsculas; retorna "—" si es nulo o vacío */
-    private static String u(String s) {
-        return (s != null && !s.isEmpty()) ? s.toUpperCase(Locale.getDefault()) : "—";
+    // ════════════════════════════════════════════════════════════════
+    //  CSS — fondo blanco, texto negro, líneas grises sutiles
+    // ════════════════════════════════════════════════════════════════
+
+    private static String css() {
+        return "<!DOCTYPE html><html><head>"
+                + "<meta charset='UTF-8'>"
+                + "<meta name='viewport' content='width=794'>"
+                + "<style>"
+
+                + "* { box-sizing: border-box; margin: 0; padding: 0; }"
+                + "body {"
+                + "  font-family: Arial, Helvetica, sans-serif;"
+                + "  font-size: 10px;"
+                + "  color: #111;"
+                + "  background: #fff;"
+                + "  width: 794px;"
+                + "  padding: 36px 44px 28px;"
+                + "}"
+
+                // ── Encabezado ──
+                + ".hdr { width: 100%; border-collapse: collapse;"
+                + "  padding-bottom: 14px; border-bottom: 1.5px solid #111; }"
+                + ".hdr td { vertical-align: middle; padding: 0; }"
+                + ".logo {"
+                + "  display: inline-block; width: 38px; height: 38px;"
+                + "  background: #111; border-radius: 5px;"
+                + "  color: #fff; font-size: 19px; font-weight: bold;"
+                + "  text-align: center; line-height: 38px; vertical-align: middle;"
+                + "}"
+                + ".emp { display: inline-block; vertical-align: middle; padding-left: 11px; }"
+                + ".emp-nom { font-size: 12.5px; font-weight: bold; color: #111; display: block; line-height: 1.3; }"
+                + ".emp-sub { font-size: 7.5px; color: #999; display: block; margin-top: 2px; }"
+                + ".hdr-r { text-align: right; vertical-align: top !important; }"
+                + ".ord-label { font-size: 7px; color: #bbb; letter-spacing: 1.5px; text-transform: uppercase; display: block; }"
+                + ".ord-num { font-size: 18px; font-weight: bold; color: #111; display: block; line-height: 1.2; margin-top: 2px; }"
+                + ".ord-date { font-size: 8.5px; color: #777; display: block; margin-top: 3px; }"
+
+                // ── Secciones ──
+                + ".sec { padding: 14px 0 12px; border-bottom: 1px solid #e8e8e8; }"
+                + ".sec-title {"
+                + "  font-size: 7.5px; font-weight: bold; color: #aaa;"
+                + "  letter-spacing: 1.5px; text-transform: uppercase;"
+                + "  margin-bottom: 10px;"
+                + "}"
+
+                // ── Grilla de campos ──
+                + ".fgrid { width: 100%; border-collapse: collapse; }"
+                + ".fgrid td { vertical-align: top; padding: 0 10px 6px 0; }"
+                + ".fgrid td:last-child { padding-right: 0; }"
+                + ".fl { font-size: 7.5px; color: #999; display: block; margin-bottom: 2px; }"
+                + ".fv { font-size: 10px; color: #111; font-weight: bold; }"
+
+                // ── Tabla de servicios ──
+                + ".srv { width: 100%; border-collapse: collapse; margin-top: 2px; }"
+                + ".srv thead th {"
+                + "  font-size: 7.5px; color: #999; font-weight: normal; text-align: left;"
+                + "  padding: 0 0 6px 0; border-bottom: 1px solid #ddd;"
+                + "  letter-spacing: 0.5px; text-transform: uppercase;"
+                + "}"
+                + ".srv thead th.r { text-align: right; }"
+                + ".srv tbody td {"
+                + "  font-size: 10px; color: #111;"
+                + "  padding: 7px 0;"
+                + "  border-bottom: 1px solid #f2f2f2;"
+                + "  vertical-align: middle;"
+                + "}"
+                + ".srv tbody td.c { text-align: center; color: #666; width: 50px; }"
+                + ".srv tbody td.r { text-align: right; font-weight: bold; width: 85px; white-space: nowrap; }"
+                + ".srv tbody td.empty { color: #ccc; font-style: italic; }"
+
+                // ── Totales ──
+                + ".totals { overflow: hidden; margin-top: 12px; }"
+                + ".tot-blk { float: right; min-width: 220px; }"
+                + ".tot { width: 100%; border-collapse: collapse; }"
+                + ".tot td { padding: 3px 0; font-size: 10px; }"
+                + ".tot .tl { text-align: right; color: #999; padding-right: 20px; }"
+                + ".tot .tv { text-align: right; font-weight: bold; white-space: nowrap; min-width: 74px; }"
+                + ".tot .sep td { border-top: 1px solid #ddd; padding-top: 7px; }"
+                + ".tot .final .tl { font-size: 11px; font-weight: bold; color: #111; }"
+                + ".tot .final .tv { font-size: 14px; font-weight: bold; color: #111; }"
+
+                // ── Firma ──
+                + ".firma { padding: 14px 0 10px; border-bottom: 1px solid #e8e8e8; }"
+                + ".firma-row { width: 100%; border-collapse: collapse; margin-top: 10px; }"
+                + ".firma-row td { padding: 0; vertical-align: bottom; font-size: 8.5px; }"
+                + ".f-lbl { color: #888; white-space: nowrap; padding-right: 6px; display: block; margin-bottom: 4px; }"
+                + ".f-lin { border-bottom: 1px solid #bbb; height: 22px; }"
+
+                // ── Términos ──
+                + ".terms { padding-top: 11px; font-size: 7px; color: #bbb; line-height: 1.6; }"
+                + ".terms b { font-weight: bold; letter-spacing: 1px; text-transform: uppercase; }"
+
+                + "</style></head>";
     }
 
-    /** Línea separadora horizontal roja */
-    private static int dibujarSeparador(Canvas canvas, int y) {
-        Paint linea = new Paint();
-        linea.setColor(COLOR_ROJO);
-        linea.setStrokeWidth(1.5f);
-        canvas.drawLine(MARGIN, y, PAGE_WIDTH - MARGIN, y, linea);
-        return y;
+    // ════════════════════════════════════════════════════════════════
+    //  Secciones HTML
+    // ════════════════════════════════════════════════════════════════
+
+    private static String encabezado(String numOrden, String fecha) {
+        return "<table class='hdr'><tr>"
+                + "<td>"
+                + "<span class='logo'>T</span>"
+                + "<span class='emp'>"
+                + "<span class='emp-nom'>MULTISERVICIOS TECROB SYS E.I.R.L.</span>"
+                + "<span class='emp-sub'>Servicio T&eacute;cnico Especializado &bull; RPC: 000-000-000</span>"
+                + "<span class='emp-sub'>tecrobsys@gmail.com</span>"
+                + "</span>"
+                + "</td>"
+                + "<td class='hdr-r'>"
+                + "<span class='ord-label'>Orden de Servicio</span>"
+                + "<span class='ord-num'>" + h(numOrden) + "</span>"
+                + "<span class='ord-date'>" + h(fecha) + "</span>"
+                + "</td>"
+                + "</tr></table>";
     }
 
-    /** Encabezado de sección (ej: "CLIENTE") */
-    private static int dibujarEncabezadoSeccion(Canvas canvas, String titulo, int y) {
-        // Fondo del encabezado
-        Paint fondo = new Paint(Paint.ANTI_ALIAS_FLAG);
-        fondo.setColor(COLOR_GRIS_CLARO);
-        canvas.drawRect(MARGIN, y, PAGE_WIDTH - MARGIN, y + 18, fondo);
-
-        Paint texto = new Paint(Paint.ANTI_ALIAS_FLAG);
-        texto.setColor(COLOR_GRIS);
-        texto.setTextSize(10);
-        texto.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
-        canvas.drawText(titulo, MARGIN + 6, y + 13, texto);
-
-        return y + 24;
-    }
-
-    /** Fila de dato: "Etiqueta    Valor" */
-    private static int dibujarFila(Canvas canvas, String etiqueta, String valor, int y) {
-        Paint etiquetaPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        etiquetaPaint.setColor(COLOR_GRIS);
-        etiquetaPaint.setTextSize(10);
-        canvas.drawText(etiqueta, MARGIN + 4, y, etiquetaPaint);
-
-        Paint valorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        valorPaint.setColor(COLOR_NEGRO);
-        valorPaint.setTextSize(10);
-        canvas.drawText(valor != null ? valor : "—", MARGIN + 130, y, valorPaint);
-
-        return y + LINE_HEIGHT;
-    }
-
-    /** Sección de datos del cliente */
-    private static int dibujarSeccionCliente(Canvas canvas, Orden orden, int y) {
-        y = dibujarEncabezadoSeccion(canvas, "CLIENTE", y);
-
+    private static String seccionCliente(Orden orden) {
+        String nombre = "&mdash;", dni = "&mdash;", tel = "&mdash;", tec = "&mdash;";
         if (orden.getCliente() != null) {
-            Orden.ClienteResumen cli = orden.getCliente();
-            y = dibujarFila(canvas, "Nombre:", u(cli.getNombreCompleto()), y);
-            y = dibujarFila(canvas, "Teléfono:", u(cli.getTelefono()), y);
+            Orden.ClienteResumen c = orden.getCliente();
+            nombre = h(c.getNombreCompleto());
+            if (c.getDni() != null && !c.getDni().isEmpty()) dni = h(c.getDni());
+            if (c.getTelefono() != null && !c.getTelefono().isEmpty()) tel = h(c.getTelefono());
+        }
+        if (orden.getTecnico() != null) tec = h(orden.getTecnico().getNombreCompleto());
+
+        return "<div class='sec'>"
+                + "<div class='sec-title'>Datos del Cliente</div>"
+                + "<table class='fgrid'><tr>"
+                + fd("Nombre completo", nombre, "44%")
+                + fd("DNI", dni, "16%")
+                + fd("Tel&eacute;fono", tel, "20%")
+                + fd("T&eacute;cnico asignado", tec, "20%")
+                + "</tr></table>"
+                + "</div>";
+    }
+
+    private static String seccionEquipo(Orden orden) {
+        Equipo eq = orden.getEquipo();
+        if (eq == null) {
+            return "<div class='sec'>"
+                    + "<div class='sec-title'>Datos del Equipo</div>"
+                    + "<span style='color:#ccc;font-style:italic;font-size:10px;'>Sin equipo registrado</span>"
+                    + "</div>";
+        }
+        String tipo        = h(eq.getTipoFormateado());
+        String marcaModelo = h(eq.getNombreCompleto());
+        String serie       = (eq.getNumeroSerie() != null && !eq.getNumeroSerie().isEmpty())
+                ? h(eq.getNumeroSerie()) : "&mdash;";
+        String accesorios  = (eq.getAccesorios() != null && !eq.getAccesorios().isEmpty())
+                ? h(eq.getAccesorios()) : "&mdash;";
+        String problema    = (eq.getDesperfecto() != null && !eq.getDesperfecto().isEmpty())
+                ? h(eq.getDesperfecto()) : "&mdash;";
+
+        return "<div class='sec'>"
+                + "<div class='sec-title'>Datos del Equipo</div>"
+                + "<table class='fgrid'>"
+                + "<tr>"
+                + fd("Tipo", tipo, "14%")
+                + fd("Marca / Modelo", marcaModelo, "28%")
+                + fd("N&uacute;mero de serie", serie, "22%")
+                + fd("Accesorios entregados", accesorios, "36%")
+                + "</tr>"
+                + "<tr>"
+                + "<td colspan='4' style='padding-top:4px;padding-bottom:0;'>"
+                + "<span class='fl'>Problema / Desperfecto reportado</span>"
+                + "<span class='fv'>" + problema + "</span>"
+                + "</td>"
+                + "</tr>"
+                + "</table>"
+                + "</div>";
+    }
+
+    private static String seccionServicio(Orden orden) {
+        List<ItemOrden> items = orden.getItemsServicio();
+        StringBuilder filas = new StringBuilder();
+
+        if (items != null && !items.isEmpty()) {
+            for (ItemOrden item : items) {
+                if (item.getServicio() == null) continue;
+                filas.append("<tr>")
+                     .append("<td>").append(h(item.getServicio().getNombre())).append("</td>")
+                     .append("<td class='c'>").append(item.getCantidad()).append("</td>")
+                     .append("<td class='r'>").append(sf(item.getPrecioUnitario())).append("</td>")
+                     .append("<td class='r'>").append(sf(item.getSubtotal())).append("</td>")
+                     .append("</tr>");
+            }
         } else {
-            y = dibujarFila(canvas, "Nombre:", "—", y);
+            filas.append("<tr><td colspan='4' class='empty'>Sin servicios registrados</td></tr>");
         }
-        return y;
+
+        return "<div class='sec'>"
+                + "<div class='sec-title'>Detalle del Servicio</div>"
+                + "<table class='srv'>"
+                + "<thead><tr>"
+                + "<th>Descripci&oacute;n</th>"
+                + "<th class='r' style='width:50px;text-align:center;'>Cant.</th>"
+                + "<th class='r' style='width:85px;'>P. Unitario</th>"
+                + "<th class='r' style='width:85px;'>Subtotal</th>"
+                + "</tr></thead>"
+                + "<tbody>" + filas + "</tbody>"
+                + "</table>"
+                + tablaTotal(orden)
+                + "</div>";
     }
 
-    /** Sección de datos del equipo */
-    private static int dibujarSeccionEquipo(Canvas canvas, Orden orden, int y) {
-        y = dibujarEncabezadoSeccion(canvas, "EQUIPO", y);
-
-        if (orden.getEquipo() != null) {
-            com.example.tecrobsys.modelos.Equipo eq = orden.getEquipo();
-            y = dibujarFila(canvas, "Tipo:", u(eq.getTipoFormateado()), y);
-            y = dibujarFila(canvas, "Marca / Modelo:", u(eq.getNombreCompleto()), y);
-            if (eq.getNumeroSerie() != null && !eq.getNumeroSerie().isEmpty())
-                y = dibujarFila(canvas, "Nro. de serie:", u(eq.getNumeroSerie()), y);
-            y = dibujarFila(canvas, "Problema:", u(eq.getDesperfecto()), y);
-            if (eq.getDescripcionGeneral() != null && !eq.getDescripcionGeneral().isEmpty())
-                y = dibujarFila(canvas, "Estado general:", u(eq.getDescripcionGeneral()), y);
-            if (eq.getAccesorios() != null && !eq.getAccesorios().isEmpty())
-                y = dibujarFila(canvas, "Accesorios:", u(eq.getAccesorios()), y);
-        } else {
-            y = dibujarFila(canvas, "Equipo:", "Sin datos", y);
-        }
-        return y;
+    private static String tablaTotal(Orden orden) {
+        return "<div class='totals'>"
+                + "<div class='tot-blk'>"
+                + "<table class='tot'>"
+                + "<tr><td class='tl'>Subtotal</td>"
+                +     "<td class='tv'>" + sf(orden.getSubtotal()) + "</td></tr>"
+                + "<tr><td class='tl'>Descuento</td>"
+                +     "<td class='tv'>&minus;&nbsp;" + sf(orden.getDescuento()) + "</td></tr>"
+                + "<tr><td class='tl'>Adelanto</td>"
+                +     "<td class='tv'>&minus;&nbsp;" + sf(orden.getAdelanto()) + "</td></tr>"
+                + "<tr class='sep'><td></td><td></td></tr>"
+                + "<tr class='final'>"
+                +     "<td class='tl'>TOTAL A COBRAR</td>"
+                +     "<td class='tv'>" + sf(orden.getSaldoPendiente()) + "</td>"
+                + "</tr>"
+                + "</table>"
+                + "</div>"
+                + "</div>";
     }
 
-    /** Sección de servicios y repuestos aplicados */
-    private static int dibujarSeccionServicios(Canvas canvas, List<ItemOrden> items, int y) {
-        y = dibujarEncabezadoSeccion(canvas, "SERVICIOS Y REPUESTOS", y);
+    private static String seccionFirma(Orden orden) {
+        String tecNombre    = orden.getTecnico() != null
+                ? h(orden.getTecnico().getNombreCompleto()) : "";
+        String fechaIngreso = h(UtilFecha.formatearFechaCorta(orden.getCreadoEn()));
+        String fechaProm    = (orden.getFechaPrometida() != null
+                && !orden.getFechaPrometida().isEmpty())
+                ? h(UtilFecha.formatearFechaCorta(orden.getFechaPrometida())) : "&mdash;";
 
-        for (ItemOrden item : items) {
-            if (item.getServicio() == null) continue;
-            String nombre = u(item.getServicio().getNombre());
-            if (item.getCantidad() > 1) nombre += " ×" + item.getCantidad();
-            String precio = String.format("S/ %.2f", item.getSubtotal());
-
-            // Nombre alineado a la izquierda, precio a la derecha
-            Paint nomPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            nomPaint.setColor(COLOR_NEGRO);
-            nomPaint.setTextSize(10);
-            canvas.drawText(nombre, MARGIN + 4, y, nomPaint);
-
-            Paint precioPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            precioPaint.setColor(COLOR_GRIS);
-            precioPaint.setTextSize(10);
-            precioPaint.setTextAlign(Paint.Align.RIGHT);
-            canvas.drawText(precio, PAGE_WIDTH - MARGIN - 4, y, precioPaint);
-
-            y += LINE_HEIGHT;
-        }
-        return y;
+        return "<div class='firma'>"
+                + "<div class='sec-title'>Entrega del Equipo</div>"
+                + "<table class='fgrid'><tr>"
+                + fd("Fecha de ingreso", fechaIngreso, "25%")
+                + fd("Fecha prometida de entrega", fechaProm, "30%")
+                + "<td style='width:45%;'></td>"
+                + "</tr></table>"
+                + "<table class='firma-row' style='margin-top:16px;'><tr>"
+                + "<td style='width:36%;'>"
+                +   "<span class='f-lbl'>Firma del cliente</span>"
+                +   "<div class='f-lin'></div>"
+                + "</td>"
+                + "<td style='width:3%;'></td>"
+                + "<td style='width:19%;'>"
+                +   "<span class='f-lbl'>DNI</span>"
+                +   "<div class='f-lin'></div>"
+                + "</td>"
+                + "<td style='width:3%;'></td>"
+                + "<td style='width:39%;'>"
+                +   "<span class='f-lbl'>Fecha de entrega</span>"
+                +   "<div class='f-lin'></div>"
+                + "</td>"
+                + "</tr></table>"
+                + "<table class='firma-row' style='margin-top:12px;'><tr>"
+                + "<td style='width:46%;'>"
+                +   "<span class='f-lbl'>T&eacute;cnico responsable</span>"
+                +   "<div class='f-lin'>" + tecNombre + "</div>"
+                + "</td>"
+                + "<td style='width:4%;'></td>"
+                + "<td style='width:50%;'>"
+                +   "<span class='f-lbl'>Firma del t&eacute;cnico</span>"
+                +   "<div class='f-lin'></div>"
+                + "</td>"
+                + "</tr></table>"
+                + "</div>";
     }
 
-    /** Sección de totales con el TOTAL resaltado */
-    private static int dibujarTotales(Canvas canvas, Orden orden, int y) {
-        y = dibujarEncabezadoSeccion(canvas, "RESUMEN DE COBRO", y);
-
-        y = dibujarFila(canvas, "Subtotal:",  String.format("S/ %.2f", orden.getSubtotal()), y);
-        y = dibujarFila(canvas, "Descuento:", String.format("- S/ %.2f", orden.getDescuento()), y);
-        y = dibujarFila(canvas, "Adelanto:",  String.format("- S/ %.2f", orden.getAdelanto()), y);
-
-        // Separador antes del total
-        Paint sep = new Paint();
-        sep.setColor(Color.LTGRAY);
-        sep.setStrokeWidth(0.8f);
-        canvas.drawLine(MARGIN + 4, y - 4, PAGE_WIDTH - MARGIN - 4, y - 4, sep);
-
-        // TOTAL A COBRAR — resaltado en rojo y negrita
-        Paint etiquetaTotal = new Paint(Paint.ANTI_ALIAS_FLAG);
-        etiquetaTotal.setColor(COLOR_ROJO_DARK);
-        etiquetaTotal.setTextSize(13);
-        etiquetaTotal.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
-        canvas.drawText("TOTAL A COBRAR:", MARGIN + 4, y + 4, etiquetaTotal);
-
-        Paint valorTotal = new Paint(Paint.ANTI_ALIAS_FLAG);
-        valorTotal.setColor(COLOR_ROJO);
-        valorTotal.setTextSize(15);
-        valorTotal.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
-        canvas.drawText(
-                String.format("S/ %.2f", orden.getSaldoPendiente()),
-                MARGIN + 130, y + 4, valorTotal);
-
-        return y + LINE_HEIGHT + 8;
+    private static String terminos() {
+        return "<div class='terms'>"
+                + "<b>T&Eacute;RMINOS Y CONDICIONES</b>&nbsp;&mdash;&nbsp;"
+                + "Los equipos no retirados en 60 d&iacute;as desde la fecha prometida ser&aacute;n considerados en abandono. "
+                + "TecrobSys no se responsabiliza por la p&eacute;rdida de informaci&oacute;n almacenada en el equipo. "
+                + "Garant&iacute;a de 30 d&iacute;as sobre los trabajos realizados desde la fecha de entrega. "
+                + "Conserve este comprobante para el retiro de su equipo."
+                + "</div>";
     }
 
-    /** Pie de página con fecha y mensaje */
-    private static void dibujarPiePagina(Canvas canvas) {
-        int y = PAGE_HEIGHT - 30;
+    // ════════════════════════════════════════════════════════════════
+    //  Helpers
+    // ════════════════════════════════════════════════════════════════
 
-        // Línea separadora
-        Paint linea = new Paint();
-        linea.setColor(Color.LTGRAY);
-        linea.setStrokeWidth(0.8f);
-        canvas.drawLine(MARGIN, y - 10, PAGE_WIDTH - MARGIN, y - 10, linea);
+    private static String fd(String label, String valor, String width) {
+        return "<td style='width:" + width + ";'>"
+                + "<span class='fl'>" + label + "</span>"
+                + "<span class='fv'>" + valor + "</span>"
+                + "</td>";
+    }
 
-        // Texto de pie
-        Paint pie = new Paint(Paint.ANTI_ALIAS_FLAG);
-        pie.setColor(COLOR_GRIS);
-        pie.setTextSize(9);
-        pie.setTextAlign(Paint.Align.CENTER);
-        canvas.drawText("Gracias por confiar en nosotros • TecrobSys",
-                PAGE_WIDTH / 2f, y + 4, pie);
+    private static String sf(double monto) {
+        return String.format(Locale.getDefault(), "S/&nbsp;%.2f", monto);
+    }
 
-        Paint marca = new Paint(Paint.ANTI_ALIAS_FLAG);
-        marca.setColor(Color.LTGRAY);
-        marca.setTextSize(8);
-        marca.setTextAlign(Paint.Align.CENTER);
-        canvas.drawText("Documento generado automáticamente",
-                PAGE_WIDTH / 2f, y + 16, marca);
+    private static String h(String text) {
+        if (text == null || text.isEmpty()) return "&mdash;";
+        return text.replace("&", "&amp;")
+                   .replace("<", "&lt;")
+                   .replace(">", "&gt;")
+                   .replace("\"", "&quot;");
     }
 }

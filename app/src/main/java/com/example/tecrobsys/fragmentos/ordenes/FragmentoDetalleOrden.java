@@ -163,26 +163,23 @@ public class FragmentoDetalleOrden extends Fragment {
         // Abrir WhatsApp
         enlace.botonWhatsapp.setOnClickListener(v -> abrirWhatsApp(telefono, ""));
 
-        // Generar y compartir PDF (en hilo secundario para no bloquear la UI)
+        // Generar y compartir PDF
         enlace.botonPdf.setOnClickListener(v -> {
             Orden ordenActual = viewModel.orden.getValue();
             if (ordenActual == null) return;
             enlace.botonPdf.setEnabled(false);
-            new Thread(() -> {
-                Uri uri = GeneradorPDF.generarOrden(requireContext(), ordenActual);
-                requireActivity().runOnUiThread(() -> {
-                    enlace.botonPdf.setEnabled(true);
-                    if (uri != null) {
-                        Intent share = new Intent(Intent.ACTION_SEND);
-                        share.setType("application/pdf");
-                        share.putExtra(Intent.EXTRA_STREAM, uri);
-                        share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                        startActivity(Intent.createChooser(share, "Compartir orden PDF"));
-                    } else {
-                        mostrarSnackbar("No se pudo generar el PDF");
-                    }
-                });
-            }).start();
+            GeneradorPDF.generarOrden(requireActivity(), ordenActual, uri -> {
+                enlace.botonPdf.setEnabled(true);
+                if (uri != null) {
+                    Intent share = new Intent(Intent.ACTION_SEND);
+                    share.setType("application/pdf");
+                    share.putExtra(Intent.EXTRA_STREAM, uri);
+                    share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(Intent.createChooser(share, "Compartir orden PDF"));
+                } else {
+                    mostrarSnackbar("No se pudo generar el PDF");
+                }
+            });
         });
 
         // Avisar que está listo

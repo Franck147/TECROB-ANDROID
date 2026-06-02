@@ -33,6 +33,19 @@
         <item name="android:textColorSecondary">@color/md_theme_onSurfaceVariant</item>
         <item name="colorControlHighlight">#33E85D5D</item>
         <item name="materialAlertDialogTheme">@style/EstiloDialogoOscuro</item>
+        <item name="bottomSheetDialogTheme">@style/EstiloBottomSheet</item>
+    </style>
+
+    <!-- BottomSheet oscuro — aplica a todos los BottomSheetDialogFragment -->
+    <style name="EstiloBottomSheet" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="colorSurface">@color/fondo_tarjeta</item>
+        <item name="colorOnSurface">@color/texto_principal</item>
+        <item name="colorOnSurfaceVariant">@color/texto_secundario</item>
+        <item name="colorPrimary">@color/rojo_primario</item>
+        <item name="colorOutline">@color/fondo_borde</item>
+        <item name="android:colorBackground">@color/fondo_tarjeta</item>
+        <item name="android:textColorPrimary">@color/texto_principal</item>
+        <item name="android:textColorSecondary">@color/texto_secundario</item>
     </style>
 
     <style name="EstiloDialogoOscuro" parent="ThemeOverlay.Material3.MaterialAlertDialog">
