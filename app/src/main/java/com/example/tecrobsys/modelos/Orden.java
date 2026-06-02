@@ -148,12 +148,17 @@ public class Orden {
         @SerializedName("telefono")
         private String telefono;
 
+        @SerializedName("dni")
+        private String dni;
+
         public String getNombre() { return nombre; }
         public String getApellido() { return apellido; }
         public String getTelefono() { return telefono; }
+        public String getDni() { return dni; }
         public void setNombre(String n) { this.nombre = n; }
         public void setApellido(String a) { this.apellido = a; }
         public void setTelefono(String t) { this.telefono = t; }
+        public void setDni(String d) { this.dni = d; }
 
         /** Retorna "Carlos Mendoza" */
         public String getNombreCompleto() {
